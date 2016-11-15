@@ -13,7 +13,7 @@
 #' (Zhang et al. 2015).
 #' @param start starting values for the parameters in the model.
 #' @export
-kron_cmmr <- function(formula, data = NULL,
+kcmmr <- function(formula, data = NULL,
                   bcov.method = c('mcd', 'acd', 'hpc'),
                   wcov.method = c('mcd', 'acd', 'hpc'),
                   control = kcmmrControl(), start = NULL)
@@ -27,7 +27,24 @@ kron_cmmr <- function(formula, data = NULL,
 
 }
 
-mcbd_cmmr <- function(formula, data = NULL)
+ccmmr <- function(formula, data = NULL, cov.method = c('mcd', 'acd', 'hpc'), 
+                  control = ccmmrControl(), start = NULL)
 {
-
+  mc <- mcout <- match.call()
+  
+  if (missing(cov.method))
+    stop("cov.method must be specified")
+  
+  missCtrl <- missing(control)
+  if (!missCtrl && !inherits(control, "ccmmrControl"))
+  {
+    if(!is.list(control))
+      stop("'control' is not a list; use ccmmrControl()")
+    
+    warning("please use ccmmrControl() instead", immediate. = TRUE)
+    control <- do.call(ccmmrControl, control)
+  }
+  
+  mc[[1]] <- quote(cmmr::ldFormula)
+  args <- eval(mc, parent.frame(1L))
 }

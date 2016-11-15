@@ -11,3 +11,8 @@ kcmmrControl <- function(trace = FALSE)
 {
   structure(jmcm::namedList(trace), class = 'kcmmrControl')
 }
+
+ccmmrControl <- function(trace = FALSE)
+{
+  structure(jmcm::namedList(trace), class = 'ccmmrControl')
+}
