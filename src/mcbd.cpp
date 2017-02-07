@@ -1,32 +1,26 @@
-#include "cov_mcbd.h"
+#include "mcbd.h"
 
 #include <iostream>
 #include <armadillo>
 
-namespace jmcm {
-CovMcbd::CovMcbd ( int n_atts,
-                   arma::vec &Y,
-                   arma::mat &X,
-                   arma::mat &U,
-                   arma::mat &V,
-                   arma::mat &W ) :
-    Y_ ( Y ), X_ ( X ), U_ ( U ), V_ ( V ), W_ ( W ),
-    n_atts_ ( n_atts ),
-    n_dims_ ( U_.n_rows ),
-    n_subs_ ( X_.n_rows / n_atts_ / n_dims_ ) {
-
+namespace cmmr {
+  mcbd::mcbd (arma::uvec m, arma::vec &Y, arma::mat &X,
+              arma::mat &U, arma::mat &V, arma::mat &W ) :
+    n_atts_ ( Y_.n_cols ), n_subs_ ( m.n_elem ),
+    m_ ( m ), Y_ ( Y ), X_ ( X ), U_ ( U ), V_ ( V ), W_ ( W ),
+  {
     int debug = 1;
 
-    if ( debug ) {
-        std::cout << "n_atts_ = " << n_atts_ << std::endl
-                  << "n_subs_ = " << n_subs_ << std::endl
-                  << "n_dims_ = " << n_dims_ << std::endl;
-    }
-
-    poly_ = arma::zeros<arma::vec> ( 4 );
+    poly_ = arma::zeros<arma::uvec> ( 4 );
+    poly_ ( 0 ) = X_.n_cols;
     poly_ ( 1 ) = U_.n_cols;
     poly_ ( 2 ) = V_.n_cols;
     poly_ ( 3 ) = W_.n_cols / n_atts_;
+
+    if ( debug ) {
+        std::cout << "n_atts_ = " << n_atts_ << std::endl
+                  << "n_subs_ = " << n_subs_ << std::endl;
+    }
 
     MatLmd_ = arma::zeros<arma::mat> ( poly_ ( 1 ), n_atts_ );
     MatPsi_ = arma::zeros<arma::mat> ( poly_ ( 2 ), n_atts_ * ( n_atts_ - 1 ) / 2 );

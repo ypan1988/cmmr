@@ -1,89 +1,110 @@
-/** 
- * @file cov_mcbd.h
- * @brief MCBD-based covariance matrix structure modelling
- *        
- * @author Yi Pan
- * @date 26/04/2016 
- */
+//
+// cov_mcbd.h:
+//   MCBD-based covariance matrix structure modelling
+//
+// Centre for Musculoskeletel Research
+// The University of Manchester
+//
+// Written by Yi Pan - ypan1988@gmail.com
+//
 
-#ifndef MCBD_H_
-#define MCBD_H_
+#ifndef CMMR_MCBD_H_
+#define CMMR_MCBD_H_
 
-#include <armadillo>
-#include "stats.h"
+#include <RcppArmadillo.h>
+// #include "stats.h"
 
-namespace jmcm
+struct mcbd_mode {
+  const arma::uword id_;
+  inline explicit mcbd_mode(const arma::uword id) : id_(id) {}
+};
+
+inline bool operator==(const mcbd_mode &a, const mcbd_mode &b) {
+  return (a.id_ == b.id_);
+}
+
+inline bool operator!=(const mcbd_mode &a, const mcbd_mode &b) {
+  return (a.id_ != b.id_);
+}
+
+struct mcbd_mode_mcd : public mcbd_mode {
+  inline mcbd_mode_mcd() : mcbd_mode(1) {}
+};
+
+struct mcbd_mode_acd : public mcbd_mode {
+  inline mcbd_mode_acd() : mcbd_mode(2) {}
+};
+
+struct mcbd_mode_hpc : public mcbd_mode {
+  inline mcbd_mode_hpc() : mcbd_mode(3) {}
+};
+
+static const mcbd_mode_mcd mcbd_mcd;
+static const mcbd_mode_acd mcbd_acd;
+static const mcbd_mode_hpc mcbd_hpc;
+
+namespace cmmr
 {
   /**
-   * Covariance matrix structure modelling with Modified Cholesky Block 
-   * Decomposition(MCBD), defined by 
-   * $$
-   * T \Sigma T^\top = D 
-   * $$
+   * Covariance matrix structure modelling based on modified Cholesky block
+   * decomposition (MCBD), an extention of Pourahmadi's modified Cholesky
+   * decomposition (MCD) $ T \Sigma T^\top = D $ for the multivariate
+   * longitudinal data setting by replacing the scalar entries of $T$ and $D$ by
+   * $J x J$ block matrices.
    *
-   * Kim, Chulmin, and Dale L. Zimmerman. "Unconstrained models for the 
-   * covariance structure of multivariate longitudinal data." Journal of 
+   * Each on-diagonal block of $D$ will be modelled by Cholesky-type approaches,
+   * namely modified Cholesky decomposition (MCD), alternative Cholesky
+   * decomposition (ACD) and hyperspherical parametrization of its Cholesky
+   * factor (HPC).
+   *
+   * MCBD-MCD: Kim, Chulmin, and Dale L. Zimmerman. "Unconstrained models for
+   * the covariance structure of multivariate longitudinal data." Journal of
    * Multivariate Amalysis, 107, 104-118.
    */
-  class CovMcbd
+  class mcbd
   {
+  private:
+    arma::uword n_atts_; // number of attributes J
+    arma::uword n_subs_; // number of subjects N
+    arma::uvec  poly_;
+
+    arma::uvec m_;
+    arma::mat Y_;
+    arma::mat X_;
+    arma::mat U_;
+    arma::mat V_;
+    arma::mat W_;
+
+    arma::vec tht_;
+    arma::vec bta_;
+    arma::vec lmd_;
+    arma::vec psi_;
+    arma::vec gma_;
+
+    arma::mat Lmd_;
+    arma::mat Psi_;
+    arma::mat Gma_;
+
+    arma::mat XBta_;
+    arma::mat ULmd_;
+    arma::mat VPsi_;
+    arma::mat Wgma_;
+    arma::mat Resid_;
+
   public:
-    /**
-     * Constructor of the CovMcbd object.
-     *
-     * @param n_atts The number of attibutions.
-     * @param Y      The vector of responses for all subjects. 
-     * @param X      The matrix of covariates for modelling mean structure.
-     * @param U      The matrix of covariates for modelling matrix $H$.
-     * @param V      The matrix of covariates for modelling matrix $B$.
-     * @param W      The matrix of covariates for modelling matrix $T$.
-     */      
-    CovMcbd ( int n_atts,
-              arma::vec &Y,
-              arma::mat &X,
-              arma::mat &U,
-              arma::mat &V,
-              arma::mat &W );
+    mcbd(arma::uvec &m, arma::mat &Y, arma::mat &X,
+         arma::mat &U, arma::mat &V, arma::mat &W );
+    ~mcbd();
 
-    /**
-     * Destructor of the CovMcbd object.
-     */
-    ~CovMcbd();
+    arma::uvec get_m() const { return m_; }
+    arma::mat get_Y() const { return Y_; }
+    arma::mat get_X() const { return X_; }
+    arma::mat get_U() const { return U_; }
+    arma::mat get_V() const { return V_; }
+    arma::mat get_W() const { return W_; }
 
-    /**
-     * Return the vector $Y$
-     */
-    arma::vec get_Y() const {
-      return Y_;
-    }
+    arma::uword get_m(const uword i) const { return m_(i); }
 
-    /**
-     * Return the matrix $X$
-     */
-    arma::vec get_X() const {
-      return X_;
-    }
-
-    /**
-     * Return the matrix $U$
-     */
-    arma::vec get_U() const {
-      return U_;
-    }
-
-    /**
-     * Return the matrix $V$
-     */
-    arma::vec get_V() const {
-      return V_;
-    }
-
-    /**
-     * Return the matrix $W$
-     */
-    arma::vec get_W() const {
-      return W_;
-    }
 
     /**
      * Return the sub-vector $Y_i$
@@ -110,10 +131,10 @@ namespace jmcm
      */
     inline arma::mat get_W(const int i) const;
 
-    
+
     arma::vec get_Resid ( const int i ) const {
       int debug = 0;
-        
+
       int vindex = n_dims_ * n_atts_ * ( i - 1 );
 
       if(debug){
@@ -121,8 +142,8 @@ namespace jmcm
                   << "n_dims_: " << n_dims_ << std::endl
                   << "n_atts_: " << n_atts_ << std::endl
                   << "vindex : " << vindex << std::endl;
-      } 
-        
+      }
+
       arma::vec result
         = Resid_.rows ( vindex, vindex + n_dims_ * n_atts_ - 1 );
 
@@ -171,7 +192,7 @@ namespace jmcm
 
       return result;
     }
- 
+
     /**
      * Calculate -2 * loglik as a object function.
      */
@@ -179,47 +200,22 @@ namespace jmcm
     void Gradient(const arma::vec &x, arma::vec &grad);
     void Grad1(arma::vec &grad1);
     void Grad2(arma::vec &grad2);
-    
     void UpdateCovMcbd ( const arma::vec &x );
     void UpdateParam ( const arma::vec &x );
     void UpdateModel();
 
   private:
-    arma::vec Y_;      /**< responses for all subjects */
-    arma::mat X_;      /**< covariates for modelling mean structure */
-    arma::mat U_;      /**< covariates for modelling matrix $H$ */
-    arma::mat V_;      /**< covariates for modelling matrix $B$ */
-    arma::mat W_;      /**< covariates for modelling matrix $T$ */
 
-    arma::vec bta_;    /**< parameters for modelling mean structure */
-    arma::vec lmd_;    /**< parameters for modelling matrix $H$ */
-    arma::vec psi_;    /**< parameters for modelling matrix $B$ */
-    arma::vec gma_;    /**< parameters for modelling matrix $T$ */
-    arma::vec tht_;    /**< all parameters as a vector */
-    
-    arma::mat MatLmd_;          /**< matrix form for $\lambda$ 0*/
-    arma::mat MatPsi_;          /**< matrix form for $\psi$ */
-    arma::mat MatGma_;          /**< matrix form for $\gamma$ */
-
-    arma::mat Xbta_;            /**< $X \beta $ */
-    arma::mat Ulmd_;            /**< $U \lambda$ */
-    arma::mat Vpsi_;            /**< $V \psi$ */
-    arma::mat Wgma_;            /**< $W \gamma$ */
-    arma::mat Resid_;           /**< $Y - X \beta$ */
 
     arma::mat D_;               /**< matrix $D$ in MCBD */
     arma::mat T_;               /**< matrix $T$ in MCBD */
     arma::mat Sigma_;           /**< matrix $\Sigma$ in MCBD */
     arma::mat Sigma_inv_;       /**< inverse of $\Sigma$ */
 
-    int n_atts_;                /**< number of attibutions */
-    int n_dims_;                /**< number of dimensions(observations) */
-    int n_subs_;                /**< number of subjects */
-    
     double log_det_Sigma_;      /**< $\log|\Sigma_i|$ in loglik  */
 
     int free_param_;
-    arma::vec poly_;
+    
 
     void gma_vec2mat() {
       int q = poly_ ( 3 );
@@ -315,7 +311,6 @@ namespace jmcm
       Sigma_inv_ = T_.t() * D_inv * T_;
 
     }
-    
   };
 }
 
