@@ -114,8 +114,8 @@ namespace cmmr
     void set_lambda(const arma::vec &x);
 
     arma::mat get_T(const arma::uword i, const arma::uword t, const arma::uword k) const;
-    arma::mat get_D(const arma::uword i, const arma::uword t) const;
     arma::mat get_T(const arma::uword i) const;
+    arma::mat get_D(const arma::uword i, const arma::uword t) cons
     arma::mat get_D(const arma::uword i) const;
     arma::mat get_Sigma_inv(const arma::uword i) const;
 
@@ -196,27 +196,6 @@ namespace cmmr
       Bi = ltrimat ( n_atts_, Bi_elem );
 
       return Bi;
-    }
-
-    void Update_T() {
-      int debug = 0;
-
-      arma::mat result = arma::eye ( n_atts_ * n_dims_, n_atts_ * n_dims_ );
-      for ( int i = 1; i <= n_dims_; ++i ) {
-        for ( int j = 1; j < i; ++j ) {
-          arma::mat Ttk = get_T ( i, j );
-
-          int rindex = ( i - 1 ) * n_atts_;
-          int cindex = ( j - 1 ) * n_atts_;
-          result ( rindex, cindex, arma::size ( Ttk ) ) = Ttk;
-
-          if ( debug ) {
-            result.print ( "T = " );
-          }
-        }
-      }
-
-      T_ = result;
     }
 
     /**

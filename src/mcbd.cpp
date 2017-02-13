@@ -164,7 +164,7 @@ namespace cmmr {
     free_param_ = fp2;
   }
 
-  arma::mat mcbd::get_T (const arma::uword i, const arma::uword t, const arma::uword k ) const {
+  arma::mat mcbd::get_T(const arma::uword i, const arma::uword t, const arma::uword k ) const {
     int debug = 0;
 
     int mat_cnt = 0;
@@ -175,25 +175,39 @@ namespace cmmr {
       }
     }
 
-    for (int idx = 2; idx <= t; ++idx) {
+    for (int idx = 1; idx <= t; ++idx) {
       if ( idx != t ) {
-        mat_cnt += idx - 1;
+        mat_cnt += idx;
       } else {
         mat_cnt += k;
       }
     }
 
-    int mindex = ( index - 1 ) * n_atts_;
-    arma::mat result  = Wgma_.rows ( mindex, mindex + n_atts_ - 1 );
-
-    if ( debug ) {
-      Wgma_.print ( "Wgma = " );
-      result.print ( "result = " );
-    }
-
-    return result;
+    int rindex = mat_cnt * n_atts_;
+    return UGma_.rows ( rindex, rindex + n_atts_ - 1 );
   }
 
+  arma::mat mcbd::get_T(const arma::uword i) const {
+    arma::mat Ti = arma::eye(n_atts_ * m_(i), n_atts_ * m_(i));
+    for(arma::uword t = 0; t != m_(i); ++t) {
+      for(arma::uword k = 0; k != t; ++k) {
+        arma::mat Phi_itk = get_T(i, t, k);
+
+        arma::uword rindex = t * n_atts_;
+        arma::uword cindex = k * n_atts_;
+
+        Ti(rindex, cindex, arma::size(Phi_itk)) = Phi_itk;
+      }
+    }
+
+    return Ti;
+  }
+
+  arma::mat mcbd::get_D(const arma::uword i, const arma::uword t) const {
+  }
+
+  arma::mat mcbd::get_D(const arma::uword i) const {
+  }
 
   void mcbd::UpdateMcbd ( const arma::vec &x ) {
     int debug = 0;
