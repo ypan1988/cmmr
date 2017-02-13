@@ -4,64 +4,165 @@
 #include <armadillo>
 
 namespace cmmr {
-  mcbd::mcbd (arma::uvec m, arma::vec &Y, arma::mat &X,
+  mcbd::mcbd (arma::uvec m, arma::mat &Y, arma::mat &X,
               arma::mat &U, arma::mat &V, arma::mat &W ) :
-    n_atts_ ( Y_.n_cols ), n_subs_ ( m.n_elem ),
-    m_ ( m ), Y_ ( Y ), X_ ( X ), U_ ( U ), V_ ( V ), W_ ( W ),
+    n_atts_ ( Y.n_cols ), n_subs_ ( m.n_elem ), m_ ( m ), V_ ( V ), W_ ( W )
   {
     int debug = 1;
 
-    poly_ = arma::zeros<arma::uvec> ( 4 );
-    poly_ ( 0 ) = X_.n_cols;
-    poly_ ( 1 ) = U_.n_cols;
-    poly_ ( 2 ) = V_.n_cols;
-    poly_ ( 3 ) = W_.n_cols / n_atts_;
-
     if ( debug ) {
-        std::cout << "n_atts_ = " << n_atts_ << std::endl
-                  << "n_subs_ = " << n_subs_ << std::endl;
+      std::cout << "n_atts_ = " << n_atts_ << std::endl
+                << "n_subs_ = " << n_subs_ << std::endl;
     }
 
-    MatLmd_ = arma::zeros<arma::mat> ( poly_ ( 1 ), n_atts_ );
-    MatPsi_ = arma::zeros<arma::mat> ( poly_ ( 2 ), n_atts_ * ( n_atts_ - 1 ) / 2 );
-    MatGma_ = arma::zeros<arma::mat> ( poly_ ( 3 ) * n_atts_, n_atts_ );
+    poly_ = arma::zeros<arma::uvec> ( 4 );
+    poly_ ( 0 ) = X.n_cols;
+    poly_ ( 1 ) = U.n_cols;
+    poly_ ( 2 ) = V.n_cols;
+    poly_ ( 3 ) = W.n_cols;
 
-    int lbta = X_.n_cols;
-    int llmd = poly_ ( 1 ) * n_atts_;
-    int lpsi = poly_ ( 2 ) * n_atts_ * ( n_atts_ - 1 ) / 2;
-    int lgma = poly_ ( 3 ) * n_atts_ * n_atts;
+    arma::mat eye_J = arma::eye<arma::mat>(n_atts_, n_atts_);
 
-    tht_ = arma::zeros<arma::vec> ( lbta + llmd + lpsi + lgma );
-    bta_ = arma::zeros<arma::vec> ( lbta );
-    lmd_ = arma::zeros<arma::vec> ( llmd );
-    psi_ = arma::zeros<arma::vec> ( lpsi );
-    gma_ = arma::zeros<arma::vec> ( lgma );
+    // initialize Y_
+    Y_ = arma::vectorise(Y.t());
+
+    // initialize X_
+    for(arma::uword idx = 0; idx != X.n_rows; ++idx)
+      X_ = arma::join_cols(X_, arma::kron(eye_J, X.row(idx)));
+
+    // initialize U_
+    for(arma::uword idx = 0; idx != U.n_rows; ++idx)
+      U_ = arma::join_cols(U_, arma::kron(eye_J, U.row(idx)));
 
     free_param_ = 0;
 
-    if ( debug ) std::cout << "CovMcbd obj created..." << std::endl;
-}
+    arma::uword ltht, lbta, lgma, lpsi, llmd;
+    lbta = (n_atts_ * poly_(0)) * 1;
+    lgma = (n_atts_ * poly_(1)) * n_atts_;
+    lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
+    llmd = poly_(3)             * n_atts_;
+    ltht = lbta + lgma + lpsi + llmd;
 
-CovMcbd::~CovMcbd() {}
+    arma::vec x = arma::zeros<arma::vec>(ltht);
+    UpdateMcbd(x);
 
-arma::vec CovMcbd::get_Y ( const int i ) const {
-    int vindex = n_dims_ * n_atts_ * ( i - 1 );
+    if ( debug ) std::cout << "mcbd obj created..." << std::endl;
+  }
 
-    arma::vec result
-        = Y_.rows ( vindex, vindex + n_dims_ * n_atts_ - 1 );
+  mcbd::~mcbd() {}
 
-    return result;
-}
+  void mcbd::UpdateMcbd ( const arma::vec &x ) {
+    int debug = 0;
+    UpdateParam( x );
+    std::cout << "params updated..." << std::endl;
+    UpdateModel();
+    std::cout << "model updated..." << std::endl;
+  }
 
-arma::mat CovMcbd::get_X ( const int i ) const {
-    int rindex = n_dims_ * n_atts_ * ( i - 1 );
-    arma::mat result = X_.rows ( rindex, rindex + n_dims_ * n_atts_ - 1 );
+  void mcbd::UpdateParam ( const arma::vec &x ) {
+    int debug = 0;
 
-    return result;
-}
+    arma::uword ltht, lbta, lgma, lpsi, llmd;
+    lbta = (n_atts_ * poly_(0)) * 1;
+    lgma = (n_atts_ * poly_(1)) * n_atts_;
+    lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
+    llmd = poly_(3)             * n_atts_;
+    ltht = lbta + lgma + lpsi + llmd;
 
+    switch ( free_param_ ) {
+    case 0:
+      tht_ = x;
+      bta_ = x.rows ( 0,                  lbta - 1 );
+      gma_ = x.rows ( lbta,               lbta + lgma - 1 );
+      psi_ = x.rows ( lbta + lgma,        lbta + lgma + lpsi - 1 );
+      lmd_ = x.rows ( lbta + lgma + lpsi, lbta + lgma + lpsi + llmd - 1 );
 
-double CovMcbd::operator() ( const arma::vec &x ) {
+      if ( debug ) {
+        bta_.t().print ( "beta = " );
+        lmd_.t().print ( "lambda = " );
+        psi_.t().print ( "psi = " );
+        gma_.t().print ( "gamma = " );
+      }
+
+      Gma_ = arma::reshape ( arma::mat ( gma_ ), U_.n_cols, n_atts_ );
+      Psi_ = arma::reshape ( arma::mat ( psi_ ), V_.n_cols, (n_atts_ * (n_atts_-1) / 2) );
+      Lmd_ = arma::reshape ( arma::mat ( lmd_ ), W_.n_cols, n_atts_ );
+
+      if ( debug ) {
+        Gma_.print ( "MatGma = " );
+        Psi_.print ( "MatPsi = " );
+        Lmd_.print ( "MatLmd = " );
+      }
+
+      break;
+
+    case 1:
+      tht_.rows(0, lbta - 1) = x;
+      bta_ = x;
+      break;
+
+    case 2:
+      tht_.rows (lbta, lbta + lgma - 1) = x;
+      gma_ = x;
+      break;
+
+    case 3:
+      tht_.rows(lbta + lgma, lbta + lgma + lpsi - 1) = x;
+      psi_ = x;
+      break;
+
+    case 4:
+      tht_.rows(lbta + lgma + lpsi, lbta + lgma + lpsi + llmd - 1)  = x;
+      lmd_ = x;
+      break;
+
+    default: Rcpp::Rcout << "Wrong value for free_param_" << std::endl;
+    }
+  }
+
+  void CovMcbd::UpdateModel() {
+    int debug = 0;
+
+    switch (free_param_) {
+    case 0:
+      Xbta_ = X_ * bta_;
+      UGma_ = U_ * Gma_;
+      VPsi_ = V_ * Psi_;
+      WLmd_ = W_ * Lmd_;
+      Resid_ = Y_ - Xbta_;
+
+      if ( debug ) {
+        UGma_.print ( "UGma = " );
+        VPsi_.print ( "VPsi = " );
+        WLmd_.print ( "WLmd = " );
+      }
+
+    case 1:
+      Xbta_ = X_ * bta_;
+      Resid_ = Y_ - Xbta_;
+      break;
+
+    case 2:
+      UGma_ = U_ * Gma_;
+      break;
+
+    case 3:
+      VPsi_ = V_ * Psi_;
+      break;
+
+    case 4:
+      WLmd_ = W_ * Lmd_;
+      break;
+
+    default: Rcpp::Rcout << "Wrong value for free_param_" << std::endl;
+    }
+  }
+
+  void mcbd::UpdateBeta() {
+    arma::uword lbta = (n_atts_ * poly_(0)) * 1;
+  }
+
+  double CovMcbd::operator() ( const arma::vec &x ) {
     int debug = 1;
 
     UpdateCovMcbd ( x );
@@ -70,10 +171,10 @@ double CovMcbd::operator() ( const arma::vec &x ) {
 
     double result = 0.0;
     for ( int i = 1; i <= n_subs_; ++i ) {
-        if ( debug ) std::cout << "i = " << i << std::endl;
-        arma::vec ri = get_Resid ( i );
-        //if ( debug ) ri.print("ri = ");
-        result += arma::as_scalar ( ri.t() * Sigma_inv_ * ri );
+      if ( debug ) std::cout << "i = " << i << std::endl;
+      arma::vec ri = get_Resid ( i );
+      //if ( debug ) ri.print("ri = ");
+      result += arma::as_scalar ( ri.t() * Sigma_inv_ * ri );
     }
 
     result += log_det_Sigma_;
@@ -81,36 +182,36 @@ double CovMcbd::operator() ( const arma::vec &x ) {
     if ( debug ) std::cout << "loglik = " << result << std::endl;
 
     return result;
-}
+  }
 
 
-void CovMcbd::Gradient ( const arma::vec& x, arma::vec& grad ) {
+  void CovMcbd::Gradient ( const arma::vec& x, arma::vec& grad ) {
     int debug = 0;
     UpdateCovMcbd ( x );
     arma::vec grad1, grad2, grad3, grad4;
 
     switch ( free_param_ ) {
     case 0:
-        Grad1 ( grad1 );
+      Grad1 ( grad1 );
     }
 
-}
+  }
 
-void CovMcbd::Grad1 ( arma::vec& grad1 ) {
+  void CovMcbd::Grad1 ( arma::vec& grad1 ) {
     int debug = 1;
 
     int lbta = bta_.n_elem;
     grad1 = arma::zeros<arma::vec> ( lbta );
     for ( int i = 1; i <= n_subs_; ++i ) {
-        arma::vec Yi = get_Y ( i );
-        arma::mat Xi = get_X ( i );
-        grad1 += Xi.t() * Sigma_inv_ * ( Yi - Xi * bta_ );
+      arma::vec Yi = get_Y ( i );
+      arma::mat Xi = get_X ( i );
+      grad1 += Xi.t() * Sigma_inv_ * ( Yi - Xi * bta_ );
     }
 
     if ( debug ) grad1.print ( "grad1 = " );
-}
+  }
 
-void CovMcbd::Grad2 ( arma::vec& grad2 ) {
+  void CovMcbd::Grad2 ( arma::vec& grad2 ) {
     int debug = 1;
 
     int llmd = lmd_.n_elem;
@@ -122,69 +223,4 @@ void CovMcbd::Grad2 ( arma::vec& grad2 ) {
     grad2 = n_dims_ * arma::kron ( oneJ, W_.t() * oneT );
 
     if ( debug ) grad2.print("grad2 = ");
-    }
-
-
-void CovMcbd::UpdateCovMcbd ( const arma::vec &x ) {
-    int debug = 1;
-    UpdateParam ( x );
-    std::cout << "params updated..." << std::endl;
-    UpdateModel();
-    std::cout << "model updated..." << std::endl;
-}
-
-void CovMcbd::UpdateParam ( const arma::vec &x ) {
-    int debug = 0;
-
-    int lbta = X_.n_cols;
-    int llmd = U_.n_cols * n_atts_;
-    int lpsi = V_.n_cols * n_atts_ * ( n_atts_ - 1 ) / 2;
-    int lgma = W_.n_cols * n_atts_;
-
-    switch ( free_param_ ) {
-    case 0:
-        tht_ = x;
-        bta_ = x.rows ( 0, lbta - 1 );
-        lmd_ = x.rows ( lbta, lbta + llmd - 1 );
-        psi_ = x.rows ( lbta + llmd, lbta + llmd + lpsi - 1 );
-        gma_ = x.rows ( lbta + llmd + lpsi, lbta + llmd + lpsi + lgma -1 );
-
-        if ( debug ) {
-            bta_.t().print ( "beta = " );
-            lmd_.t().print ( "lambda = " );
-            psi_.t().print ( "psi = " );
-            gma_.t().print ( "gamma = " );
-        }
-
-        MatLmd_ = arma::reshape ( arma::mat ( lmd_ ), U_.n_cols, n_atts_ );
-        MatPsi_ = arma::reshape ( arma::mat ( psi_ ), V_.n_cols, lpsi / V_.n_cols );
-        gma_vec2mat();
-
-        if ( debug ) {
-            MatLmd_.print ( "MatLmd = " );
-            MatPsi_.print ( "MatPsi = " );
-            MatGma_.print ( "MatGma = " );
-        }
-
-    }
-}
-
-void CovMcbd::UpdateModel() {
-    int debug = 0;
-
-    Xbta_ = X_ * bta_;
-    Ulmd_ = U_ * MatLmd_;
-    Vpsi_ = V_ * MatPsi_;
-    Wgma_ = W_ * MatGma_;
-    Resid_ = Y_ - Xbta_;
-
-    if ( debug ) {
-        Ulmd_.print ( "Ulmd = " );
-        Vpsi_.print ( "Vpsi = " );
-        Wgma_.print ( "Wgma = " );
-    }
-
-    Update_Sigma();
-}
-
-}
+  }

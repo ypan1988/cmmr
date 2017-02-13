@@ -12,7 +12,6 @@
 #define CMMR_MCBD_H_
 
 #include <RcppArmadillo.h>
-// #include "stats.h"
 
 struct mcbd_mode {
   const arma::uword id_;
@@ -64,31 +63,20 @@ namespace cmmr
   class mcbd
   {
   private:
-    arma::uword n_atts_; // number of attributes J
-    arma::uword n_subs_; // number of subjects N
+    const arma::uword n_atts_; // number of attributes J
+    const arma::uword n_subs_; // number of subjects N
     arma::uvec  poly_;
 
     arma::uvec m_;
-    arma::mat Y_;
-    arma::mat X_;
-    arma::mat U_;
-    arma::mat V_;
-    arma::mat W_;
+    arma::vec Y_;
+    arma::mat X_, U_, V_, W_;
 
-    arma::vec tht_;
-    arma::vec bta_;
-    arma::vec lmd_;
-    arma::vec psi_;
-    arma::vec gma_;
+    arma::uword free_param_;
+    arma::vec tht_, bta_, gma_, psi_, lmd_;
+    arma::mat Gma_, Psi_, Lmd_;
 
-    arma::mat Lmd_;
-    arma::mat Psi_;
-    arma::mat Gma_;
-
-    arma::mat XBta_;
-    arma::mat ULmd_;
-    arma::mat VPsi_;
-    arma::mat Wgma_;
+    arma::vec Xbta_;
+    arma::mat UGma_, VPsi_, WLmd;
     arma::mat Resid_;
 
   public:
@@ -97,40 +85,99 @@ namespace cmmr
     ~mcbd();
 
     arma::uvec get_m() const { return m_; }
-    arma::mat get_Y() const { return Y_; }
+    arma::vec get_Y() const { return Y_; }
     arma::mat get_X() const { return X_; }
     arma::mat get_U() const { return U_; }
     arma::mat get_V() const { return V_; }
     arma::mat get_W() const { return W_; }
 
-    arma::uword get_m(const uword i) const { return m_(i); }
+    arma::uword get_m(const arma::uword i) const { return m_(i); }
+    arma::vec get_Y(const arma::uword i) const {
+        arma::mat Yi;
+        if (i == 0) Yi = Y_.rows(0, m_(0)-1);
+        else {
+            int index = arma::sum(m_subvec(0, i - 1));
+            Yi = Y_.rows(index, index + m_(i) -1);
+        }
 
+        return arma::vectorise(Yi.t());
+    }
 
-    /**
-     * Return the sub-vector $Y_i$
-     */
-    inline arma::vec get_Y(const int i) const;
+    arma::mat get_X(const arma::uword i) const {
+        arma::mat Xi;
+        if (i==0) Xi = X_.rows(0, m_(0)-1);
+        else {
+            int index = arma::sum(m_subvec(0, i - 1));
+            Xi = X_.rows(index, index + m_(i) -1);
+        }
 
-    /**
-     * Return the sub-vector $X_i$
-     */
-    inline arma::mat get_X(const int i) const;
+        arma::mat eye_J = arma::eye<arma::mat>(n_atts_, n_atts_);
+        arma::mat result;
+        for(arma::uword t = 0; t != m_(i); ++t) {
+            result = arma::join_cols(result, arma::kron(eye_J, Xi.row(t)));
+        }
 
-    /**
-     * Return the sub-matrix $U_i$
-     */
-    inline arma::mat get_U(const int i) const;
+        return result;
+    }
+    arma::mat get_X() const {
+        arma::mat Xi, result;
+        for(arma::uword i = 0; i != n_sub_; ++i) {
+            Xi = get_X(i);
+            result = arma::join_cols(result, Xi);
+        }
+        return result;
+    }
 
-    /**
-     * Return the sub-matrix $V_i$
-     */
-    inline arma::mat get_V(const int i) const;
+    arma::mat get_U(const arma::uword i) const {
+        arma::mat Ui;
+        if (m_(i) != 1) {
+            if (i == 1) {
+                arma::uword first_index = 0, last_index = m_(0) * (m_(0) - 1) / 2 - 1;
+                Ui = U_.rows(first_index, last_index);
+            } else {
+                arma::uword first_index = 0;
+                for (arma::uword idx = 0; idx != i; ++idx) {
+                    first_index += m_(idx) * (m_(idx) - 1) / 2 - 1;
+                }
+                arma::uword last_index = first_index + m_(idx) * (m_(idx) - 1) / 2 - 1;
+                Ui = U_.rows(first_index, last_index);
+            }
+        }
 
-    /**
-     * Return the sub-matrix $W_i$
-     */
-    inline arma::mat get_W(const int i) const;
+        arma::mat eye_J = arma::eye<arma::mat>(n_atts_, n_atts_);
+        arma::mat result;
+        for(arma::uword t = 0; t != Ui.n_rows; ++t) {
+            result = arma::join_cols(result, arma::kron(eye_J, Ui.row(t)));
+        }
 
+        return result;
+    }
+    arma::mat get_X() const {
+        arma::mat Xi, result;
+        for(arma::uword i = 0; i != n_sub_; ++i) {
+            Xi = get_X(i);
+            result = arma::join_cols(result, Xi);
+        }
+        return result;
+    }
+
+    arma::mat get_V() const { return V_; }
+    arma::mat get_V(const arma::uword i) const {
+        if (i == 0) Vi = V_.rows(0, m_(0) - 1);
+        else {
+            int index = arma::sum(m_subvec(0, i - 1));
+            Vi = V_.rows(index, index + m_(i) -1);
+        }
+    }
+
+    arma::mat get_W() const { return W_; }
+    arma::mat get_W(const arma::uword i) const {
+        if (i == 0) Wi = W_.rows(0, m_(0) - 1);
+        else {
+            int index = arma::sum(m_subvec(0, i - 1));
+            Wi = W_.rows(index, index + m_(i) -1);
+        }
+    }
 
     arma::vec get_Resid ( const int i ) const {
       int debug = 0;
@@ -200,9 +247,12 @@ namespace cmmr
     void Gradient(const arma::vec &x, arma::vec &grad);
     void Grad1(arma::vec &grad1);
     void Grad2(arma::vec &grad2);
-    void UpdateCovMcbd ( const arma::vec &x );
+
+    void UpdateMcbd ( const arma::vec &x );
     void UpdateParam ( const arma::vec &x );
     void UpdateModel();
+
+    void UpdateBeta();
 
   private:
 
@@ -213,22 +263,20 @@ namespace cmmr
     arma::mat Sigma_inv_;       /**< inverse of $\Sigma$ */
 
     double log_det_Sigma_;      /**< $\log|\Sigma_i|$ in loglik  */
-
-    int free_param_;
     
 
-    void gma_vec2mat() {
-      int q = poly_ ( 3 );
-      for ( int i = 1; i <= n_atts_; ++i ) {
-        int vindex = ( i - 1 ) * n_atts_;
-        int mindex = ( i - 1 ) * q;
-        arma::vec gma_i = gma_.rows ( vindex, vindex + n_atts_ * q - 1 );
-        arma::mat MatGma_i = arma::reshape ( arma::mat ( gma_i ), q, n_atts_ );
-        MatGma_.rows ( mindex, mindex + q - 1 ) = MatGma_i;
-        // MatGma_.print ( "GAMMA = " );
+    /* void gma_vec2mat() { */
+    /*   int q = poly_ ( 3 ); */
+    /*   for ( int i = 1; i <= n_atts_; ++i ) { */
+    /*     int vindex = ( i - 1 ) * n_atts_; */
+    /*     int mindex = ( i - 1 ) * q; */
+    /*     arma::vec gma_i = gma_.rows ( vindex, vindex + n_atts_ * q - 1 ); */
+    /*     arma::mat MatGma_i = arma::reshape ( arma::mat ( gma_i ), q, n_atts_ ); */
+    /*     MatGma_.rows ( mindex, mindex + q - 1 ) = MatGma_i; */
+    /*     // MatGma_.print ( "GAMMA = " ); */
 
-      }
-    }
+    /*   } */
+    /* } */
 
     arma::mat get_H ( const int i ) const {
 
