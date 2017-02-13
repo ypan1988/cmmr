@@ -49,7 +49,151 @@ namespace cmmr {
     if ( debug ) std::cout << "mcbd obj created..." << std::endl;
   }
 
-  mcbd::~mcbd() {}
+  arma::uword mcbd::get_m(const arma::uword i) const {
+    return m_(i);
+  }
+
+  arma::vec mcbd::get_Y(const arma::uword i) const {
+    arma::mat Yi;
+    if (i == 0) Yi = Y_.rows(0, n_atts_ * m_(0)-1);
+    else {
+      int index = n_atts_ * arma::sum(m_subvec(0, i - 1));
+      Yi = Y_.rows(index, index + n_atts_ * m_(i) -1);
+    }
+
+    return Yi;
+  }
+
+  arma::mat mcbd::get_X(const arma::uword i) const {
+    arma::mat Xi;
+    if (i==0) Xi = X_.rows(0, n_atts_ * m_(0)-1);
+    else {
+      int index = n_atts_ * arma::sum(m_subvec(0, i - 1));
+      Xi = X_.rows(index, index + n_atts_ * m_(i) -1);
+    }
+
+    return Xi;
+  }
+
+  arma::mat mcbd::get_U(const arma::uword i) const {
+    arma::mat Ui;
+    if (m_(i) != 1) {
+      if (i == 1) {
+        arma::uword first_index = 0;
+        arma::uword last_index = n_atts_ * m_(0) * (m_(0) - 1) / 2 - 1;
+        Ui = U_.rows(first_index, last_index);
+      } else {
+        arma::uword first_index = 0;
+        for (arma::uword idx = 0; idx != i; ++idx) {
+          first_index += m_(idx) * (m_(idx) - 1) / 2 - 1;
+        }
+        first_index *= n_atts_;
+        arma::uword last_index = first_index + n_atts_ * m_(idx) * (m_(idx) - 1) / 2 - 1;
+        Ui = U_.rows(first_index, last_index);
+      }
+    }
+
+    return Ui;
+  }
+
+  arma::mat mcbd::get_V(const arma::uword i) const {
+    arma::mat Vi;
+    if (i==0) Vi = V_.rows(0, m_(0)-1);
+    else {
+      int index = arma::sum(m_subvec(0, i - 1));
+      Vi = V_.rows(index, index + m_(i) -1);
+    }
+
+    return Vi;
+  }
+
+  arma::mat mcbd::get_W(const arma::uword i) const {
+    arma::mat Wi;
+    if (i==0) Wi = W_.rows(0, m_(0)-1);
+    else {
+      int index = arma::sum(m_subvec(0, i - 1));
+      Wi = W_.rows(index, index + m_(i) -1);
+    }
+
+    return Wi;
+  }
+
+  arma::vec mcbd::get_Resid ( const arma::uword i ) const {
+    arma::mat Residi;
+    if (i == 0) Residi = Resid_.rows(0, n_atts_ * m_(0)-1);
+    else {
+      int index = n_atts_ * arma::sum(m_subvec(0, i - 1));
+      Residi = Resid_.rows(index, index + n_atts_ * m_(i) -1);
+    }
+
+    return Residi;
+  }
+
+  void mcbd::set_theta(const arma::vec &x) {
+    int fp2 = free_param_;
+    free_param_ = 0;
+    UpdateMcbd(x);
+    free_param_ = fp2;
+  }
+
+  void mcbd::set_beta(const arma::vec &x) {
+    int fp2 = free_param_;
+    free_param_ = 1;
+    UpdateMcbd(x);
+    free_param_ = fp2;
+  }
+
+  void mcbd::set_gamma(const arma::vec &x) {
+    int fp2 = free_param_;
+    free_param_ = 2;
+    UpdateMcbd(x);
+    free_param_ = fp2;
+  }
+
+  void mcbd::set_psi(const arma::vec &x) {
+    int fp2 = free_param_;
+    free_param_ = 3;
+    UpdateMcbd(x);
+    free_param_ = fp2;
+  }
+
+  void mcbd::set_lambda(const arma::vec &x) {
+    int fp2 = free_param_;
+    free_param_ = 4;
+    UpdateMcbd(x);
+    free_param_ = fp2;
+  }
+
+  arma::mat mcbd::get_T (const arma::uword i, const arma::uword t, const arma::uword k ) const {
+    int debug = 0;
+
+    int mat_cnt = 0;
+    if (i == 0) mat_cnt = 0;
+    else {
+      for(arma::uword idx = 0; idx != i; ++idx) {
+        mat_cnt += m_(i) * (m_(i) - 1) / 2 ;
+      }
+    }
+
+    for (int idx = 2; idx <= t; ++idx) {
+      if ( idx != t ) {
+        mat_cnt += idx - 1;
+      } else {
+        mat_cnt += k;
+      }
+    }
+
+    int mindex = ( index - 1 ) * n_atts_;
+    arma::mat result  = Wgma_.rows ( mindex, mindex + n_atts_ - 1 );
+
+    if ( debug ) {
+      Wgma_.print ( "Wgma = " );
+      result.print ( "result = " );
+    }
+
+    return result;
+  }
+
 
   void mcbd::UpdateMcbd ( const arma::vec &x ) {
     int debug = 0;
@@ -160,6 +304,20 @@ namespace cmmr {
 
   void mcbd::UpdateBeta() {
     arma::uword lbta = (n_atts_ * poly_(0)) * 1;
+    arma::mat XSX = arma::zeros<arma::mat>(lbta, lbta);
+    arma::vec XSY = arma::zeros<arma::vec>(lbta);
+
+    for (arma::uword i = 0; i != n_subs_; ++i) {
+      arma::mat Xi = get_X(i);
+      arma::vec Yi = get_Y(i);
+      arma::mat Sigmai_inv = get_Sigma_inv(i);
+
+      XSX += Xi.t() * Sigmai_inv * Xi;
+      XSY += Xi.t() * Sigmai_inv * Yi;
+    }
+
+    arma::vec beta = XSX.i() * XSY;
+    set_beta(beta);
   }
 
   double CovMcbd::operator() ( const arma::vec &x ) {

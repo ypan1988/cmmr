@@ -82,7 +82,7 @@ namespace cmmr
   public:
     mcbd(arma::uvec &m, arma::mat &Y, arma::mat &X,
          arma::mat &U, arma::mat &V, arma::mat &W );
-    ~mcbd();
+    ~mcbd() {}
 
     arma::uvec get_m() const { return m_; }
     arma::vec get_Y() const { return Y_; }
@@ -90,114 +90,36 @@ namespace cmmr
     arma::mat get_U() const { return U_; }
     arma::mat get_V() const { return V_; }
     arma::mat get_W() const { return W_; }
+    arma::vec get_Resid() const { return Resid_; }
 
-    arma::uword get_m(const arma::uword i) const { return m_(i); }
-    arma::vec get_Y(const arma::uword i) const {
-        arma::mat Yi;
-        if (i == 0) Yi = Y_.rows(0, m_(0)-1);
-        else {
-            int index = arma::sum(m_subvec(0, i - 1));
-            Yi = Y_.rows(index, index + m_(i) -1);
-        }
+    arma::uword get_m(const arma::uword i) const;
+    arma::vec get_Y(const arma::uword i) const;
+    arma::mat get_X(const arma::uword i) const;
+    arma::mat get_U(const arma::uword i) const;
+    arma::mat get_V(const arma::uword i) const;
+    arma::mat get_W(const arma::uword i) const;
+    arma::vec get_Resid(const arma::uword i) const;
 
-        return arma::vectorise(Yi.t());
-    }
+    arma::vec get_theta() const { return tht_; }
+    arma::vec get_beta() const { return bta_; }
+    arma::vec get_gamma() const { return gma_; }
+    arma::vec get_psi() const { return psi_; }
+    arma::vec get_lambda() const { return lmd_; }
 
-    arma::mat get_X(const arma::uword i) const {
-        arma::mat Xi;
-        if (i==0) Xi = X_.rows(0, m_(0)-1);
-        else {
-            int index = arma::sum(m_subvec(0, i - 1));
-            Xi = X_.rows(index, index + m_(i) -1);
-        }
+    void set_free_param(const arma::uword n) { free_param_ = n; }
+    void set_theta(const arma::vec &x);
+    void set_beta(const arma::vec &x);
+    void set_gamma(const arma::vec &x);
+    void set_psi(const arma::vec &x);
+    void set_lambda(const arma::vec &x);
 
-        arma::mat eye_J = arma::eye<arma::mat>(n_atts_, n_atts_);
-        arma::mat result;
-        for(arma::uword t = 0; t != m_(i); ++t) {
-            result = arma::join_cols(result, arma::kron(eye_J, Xi.row(t)));
-        }
+    arma::mat get_T(const arma::uword i, const arma::uword t, const arma::uword k) const;
+    arma::mat get_D(const arma::uword i, const arma::uword t) const;
+    arma::mat get_T(const arma::uword i) const;
+    arma::mat get_D(const arma::uword i) const;
+    arma::mat get_Sigma_inv(const arma::uword i) const;
 
-        return result;
-    }
-    arma::mat get_X() const {
-        arma::mat Xi, result;
-        for(arma::uword i = 0; i != n_sub_; ++i) {
-            Xi = get_X(i);
-            result = arma::join_cols(result, Xi);
-        }
-        return result;
-    }
-
-    arma::mat get_U(const arma::uword i) const {
-        arma::mat Ui;
-        if (m_(i) != 1) {
-            if (i == 1) {
-                arma::uword first_index = 0, last_index = m_(0) * (m_(0) - 1) / 2 - 1;
-                Ui = U_.rows(first_index, last_index);
-            } else {
-                arma::uword first_index = 0;
-                for (arma::uword idx = 0; idx != i; ++idx) {
-                    first_index += m_(idx) * (m_(idx) - 1) / 2 - 1;
-                }
-                arma::uword last_index = first_index + m_(idx) * (m_(idx) - 1) / 2 - 1;
-                Ui = U_.rows(first_index, last_index);
-            }
-        }
-
-        arma::mat eye_J = arma::eye<arma::mat>(n_atts_, n_atts_);
-        arma::mat result;
-        for(arma::uword t = 0; t != Ui.n_rows; ++t) {
-            result = arma::join_cols(result, arma::kron(eye_J, Ui.row(t)));
-        }
-
-        return result;
-    }
-    arma::mat get_X() const {
-        arma::mat Xi, result;
-        for(arma::uword i = 0; i != n_sub_; ++i) {
-            Xi = get_X(i);
-            result = arma::join_cols(result, Xi);
-        }
-        return result;
-    }
-
-    arma::mat get_V() const { return V_; }
-    arma::mat get_V(const arma::uword i) const {
-        if (i == 0) Vi = V_.rows(0, m_(0) - 1);
-        else {
-            int index = arma::sum(m_subvec(0, i - 1));
-            Vi = V_.rows(index, index + m_(i) -1);
-        }
-    }
-
-    arma::mat get_W() const { return W_; }
-    arma::mat get_W(const arma::uword i) const {
-        if (i == 0) Wi = W_.rows(0, m_(0) - 1);
-        else {
-            int index = arma::sum(m_subvec(0, i - 1));
-            Wi = W_.rows(index, index + m_(i) -1);
-        }
-    }
-
-    arma::vec get_Resid ( const int i ) const {
-      int debug = 0;
-
-      int vindex = n_dims_ * n_atts_ * ( i - 1 );
-
-      if(debug){
-        std::cout << "dim of Resid_: " << Resid_.n_elem << std::endl
-                  << "n_dims_: " << n_dims_ << std::endl
-                  << "n_atts_: " << n_atts_ << std::endl
-                  << "vindex : " << vindex << std::endl;
-      }
-
-      arma::vec result
-        = Resid_.rows ( vindex, vindex + n_dims_ * n_atts_ - 1 );
-
-      return result;
-    }
-
-    arma::mat get_D ( const int t ) const {
+    arma::mat get_D (const arma::uword i, const arma::uword t) const {
       int debug = 0;
 
       arma::mat Ht = get_H ( t );
@@ -216,29 +138,6 @@ namespace cmmr
       return Bt_inv * Ht * Bt_inv.t();
     }
 
-    arma::mat get_T ( const int t, const int k ) const {
-
-      int debug = 0;
-
-      int index = 0;
-      for ( int i = 2; i <= t; ++i ) {
-        if ( i != t ) {
-          index += i - 1;
-        } else {
-          index += k;
-        }
-      }
-
-      int mindex = ( index - 1 ) * n_atts_;
-      arma::mat result  = Wgma_.rows ( mindex, mindex + n_atts_ - 1 );
-
-      if ( debug ) {
-        Wgma_.print ( "Wgma = " );
-        result.print ( "result = " );
-      }
-
-      return result;
-    }
 
     /**
      * Calculate -2 * loglik as a object function.
