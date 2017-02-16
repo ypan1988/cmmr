@@ -79,9 +79,12 @@ namespace cmmr
     arma::mat UGma_, VPsi_, WLmd;
     arma::mat Resid_;
 
+    const mcbd_mode mcbd_mode_obj_;
+
   public:
-    mcbd(arma::uvec &m, arma::mat &Y, arma::mat &X,
-         arma::mat &U, arma::mat &V, arma::mat &W );
+    mcbd(const arma::uvec &m, const arma::mat &Y, const arma::mat &X,
+         const arma::mat &U, const arma::mat &V, const arma::mat &W,
+         const mcbd_mode &mcbd_mode_obj);
     ~mcbd() {}
 
     arma::uvec get_m() const { return m_; }
@@ -115,7 +118,11 @@ namespace cmmr
 
     arma::mat get_T(const arma::uword i, const arma::uword t, const arma::uword k) const;
     arma::mat get_T(const arma::uword i) const;
-    arma::mat get_D(const arma::uword i, const arma::uword t) cons
+
+    arma::mat get_Tbar(const arma::uword i, const arma::uword t) const;
+    arma::mat get_Dbar(const arma::uword i, const arma::uword t) const;
+
+    arma::mat get_D(const arma::uword i, const arma::uword t) const;
     arma::mat get_D(const arma::uword i) const;
     arma::mat get_Sigma_inv(const arma::uword i) const;
 
@@ -162,7 +169,6 @@ namespace cmmr
     arma::mat Sigma_inv_;       /**< inverse of $\Sigma$ */
 
     double log_det_Sigma_;      /**< $\log|\Sigma_i|$ in loglik  */
-    
 
     /* void gma_vec2mat() { */
     /*   int q = poly_ ( 3 ); */
@@ -199,21 +205,21 @@ namespace cmmr
     }
 
     /**
-     * Update matrix D (also calculate log_det_Sigma) 
+     * Update matrix D (also calculate log_det_Sigma)
      */
     void Update_D() {
       int debug = 0;
-        
+
       log_det_Sigma_ = 0.0;
       arma::mat result = arma::eye ( n_atts_ * n_dims_, n_atts_ * n_dims_ );
       for ( int i = 1; i <= n_dims_; ++i ) {
         arma::mat Dt = get_D ( i );
-            
+
         double val;
         double sign;
         arma::log_det(val, sign, Dt);
         log_det_Sigma_ += val;
-            
+
         int rindex = ( i - 1 ) * n_atts_;
         int cindex = ( i - 1 ) * n_atts_;
         result ( rindex, cindex, arma::size ( Dt ) ) = Dt;

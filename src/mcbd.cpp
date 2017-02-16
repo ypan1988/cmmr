@@ -4,22 +4,24 @@
 #include <armadillo>
 
 namespace cmmr {
-  mcbd::mcbd (arma::uvec m, arma::mat &Y, arma::mat &X,
-              arma::mat &U, arma::mat &V, arma::mat &W ) :
-    n_atts_ ( Y.n_cols ), n_subs_ ( m.n_elem ), m_ ( m ), V_ ( V ), W_ ( W )
+  mcbd::mcbd (const arma::uvec &m, const arma::mat &Y, const arma::mat &X,
+              const arma::mat &U, const arma::mat &V, const arma::mat &W,
+              const mcbd_mode &mcbd_mode_obj) :
+    n_atts_(Y.n_cols), n_subs_(m.n_elem), m_(m), V_(V), W_(W),
+    mcbd_mode_obj_(mcbd_mode_obj)
   {
     int debug = 1;
 
-    if ( debug ) {
+    if (debug) {
       std::cout << "n_atts_ = " << n_atts_ << std::endl
                 << "n_subs_ = " << n_subs_ << std::endl;
     }
 
-    poly_ = arma::zeros<arma::uvec> ( 4 );
-    poly_ ( 0 ) = X.n_cols;
-    poly_ ( 1 ) = U.n_cols;
-    poly_ ( 2 ) = V.n_cols;
-    poly_ ( 3 ) = W.n_cols;
+    poly_ = arma::zeros<arma::uvec>(4);
+    poly_(0) = X.n_cols;
+    poly_(1) = U.n_cols;
+    poly_(2) = V.n_cols;
+    poly_(3) = W.n_cols;
 
     arma::mat eye_J = arma::eye<arma::mat>(n_atts_, n_atts_);
 
@@ -201,6 +203,14 @@ namespace cmmr {
     }
 
     return Ti;
+  }
+
+  arma::mat mcbd::get_T_bar(const arma::uword i, const arma::uword t) const {
+    arma::vec Ti_bar_elem = -arma::trans();
+  }
+
+  arma::mat mcbd::get_Dbar(const arma::uword i, const arma::uword t) const {
+
   }
 
   arma::mat mcbd::get_D(const arma::uword i, const arma::uword t) const {

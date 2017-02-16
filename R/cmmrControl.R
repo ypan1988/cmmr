@@ -1,3 +1,8 @@
+mcmmrControl <- function(trace = FALSE)
+{
+  structure(jmcm::namedList(trace), class = 'ccmmrControl')
+}
+
 #' @title Control of Kronecker Product based Covariance Structure Model Fitting
 #'
 #' @description Construct control structures for kronecker product based
@@ -10,9 +15,4 @@
 kcmmrControl <- function(trace = FALSE)
 {
   structure(jmcm::namedList(trace), class = 'kcmmrControl')
-}
-
-ccmmrControl <- function(trace = FALSE)
-{
-  structure(jmcm::namedList(trace), class = 'ccmmrControl')
 }
