@@ -52,10 +52,14 @@ NULL
 
 #' @rdname modular
 #' @export
-mldFormula <- function(formular, data = NULL, quad = c(3,3,3,3), 
+mldFormula <- function(formular, data = NULL, quad = c(3, 3, 3, 3), 
                        cov.method = c('mcd', 'acd', 'hpc'), 
                        control = jmcmControl(), start=NULL)
 {
+  debug <- 1
+  
+  if (debug) cat("mldFormula():\n")
+  
   mf <- mc <- match.call()
   m <- match(c("formula", "data"), names(mf), 0L)
   mf <- mf[c(1, m)]

@@ -1,7 +1,7 @@
 #include "mcbd.h"
+#include "utils.h"
 
-#include <iostream>
-#include <armadillo>
+#include <RcppArmadillo.h>
 
 namespace cmmr {
   mcbd::mcbd (const arma::uvec &m, const arma::mat &Y, const arma::mat &X,
@@ -206,11 +206,31 @@ namespace cmmr {
   }
 
   arma::mat mcbd::get_T_bar(const arma::uword i, const arma::uword t) const {
-    arma::vec Ti_bar_elem = -arma::trans();
+
+    arma::uword index = 0;
+    for (arma::uword idx = 0; idx != i; ++idx) {
+      index += m_(idx) * (m_(idx) - 1) / 2;
+    }
+    arma::vec Ti_bar_elem = -arma::trans(VPsi_.row(index + t));
+
+    arma::mat Ti_bar = arma::eye(n_atts_, n_atts_);
+    Ti_bar = dragonwell::ltrimat(n_atts_, Ti_bar_elem);
+
+    return Ti_bar;
   }
 
-  arma::mat mcbd::get_Dbar(const arma::uword i, const arma::uword t) const {
+  arma::mat mcbd::get_D_bar(const arma::uword i, const arma::uword t) const {
 
+    arma::uword index = 0;
+    for (arma::uword idx = 0; idx != i; ++idx) {
+      index += m_(idx) * (m_(idx) - 1) / 2;
+    }
+    arma::vec Di_bar_elem = -arma::trans(WLmd_.row(index + t));
+
+    arma::mat Di_bar = arma::eye(n_atts_, n_atts_);
+    Di_bar.diag() = Di_bar_elem;
+
+    return Di_bar;
   }
 
   arma::mat mcbd::get_D(const arma::uword i, const arma::uword t) const {

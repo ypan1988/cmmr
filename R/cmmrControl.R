@@ -1,6 +1,15 @@
+namedList <- function(...) {
+  L <- list(...)
+  snm <- sapply(substitute(list(...)), deparse)[-1]
+  if (is.null(nm <- names(L))) nm <- snm
+  if (any(nonames <- nm == "")) nm[nonames] <- snm[nonames]
+  setNames(L,nm)
+}
+
+#' @title Control of MCBD-based Covariance Matrices Model Fitting
 mcmmrControl <- function(trace = FALSE)
 {
-  structure(jmcm::namedList(trace), class = 'ccmmrControl')
+  structure(namedList(trace), class = 'mcmmrControl')
 }
 
 #' @title Control of Kronecker Product based Covariance Structure Model Fitting
@@ -14,5 +23,5 @@ mcmmrControl <- function(trace = FALSE)
 #' @export kcmmrControl
 kcmmrControl <- function(trace = FALSE)
 {
-  structure(jmcm::namedList(trace), class = 'kcmmrControl')
+  structure(namedList(trace), class = 'kcmmrControl')
 }

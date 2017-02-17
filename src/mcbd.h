@@ -119,8 +119,8 @@ namespace cmmr
     arma::mat get_T(const arma::uword i, const arma::uword t, const arma::uword k) const;
     arma::mat get_T(const arma::uword i) const;
 
-    arma::mat get_Tbar(const arma::uword i, const arma::uword t) const;
-    arma::mat get_Dbar(const arma::uword i, const arma::uword t) const;
+    arma::mat get_T_bar(const arma::uword i, const arma::uword t) const;
+    arma::mat get_D_bar(const arma::uword i, const arma::uword t) const;
 
     arma::mat get_D(const arma::uword i, const arma::uword t) const;
     arma::mat get_D(const arma::uword i) const;
