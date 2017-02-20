@@ -76,7 +76,7 @@ namespace cmmr
     arma::mat Gma_, Psi_, Lmd_;
 
     arma::vec Xbta_;
-    arma::mat UGma_, VPsi_, WLmd;
+    arma::mat UGma_, VPsi_, WLmd_;
     arma::mat Resid_;
 
     const mcbd_mode mcbd_mode_obj_;
@@ -126,24 +126,24 @@ namespace cmmr
     arma::mat get_D(const arma::uword i) const;
     arma::mat get_Sigma_inv(const arma::uword i) const;
 
-    arma::mat get_D (const arma::uword i, const arma::uword t) const {
-      int debug = 0;
+    /* arma::mat get_D (const arma::uword i, const arma::uword t) const { */
+    /*   int debug = 0; */
 
-      arma::mat Ht = get_H ( t );
-      if ( debug ) {
-        Ht.print ( "Ht = " );
-      }
-      arma::mat Bt = get_B ( t );
-      if ( debug ) {
-        Bt.print ( "Bt = " );
-      }
-      arma::mat Bt_inv = Bt.i();
-      if ( debug ) {
-        Bt_inv.print ( "Bt_inv = " );
-      }
+    /*   arma::mat Ht = get_H ( t ); */
+    /*   if ( debug ) { */
+    /*     Ht.print ( "Ht = " ); */
+    /*   } */
+    /*   arma::mat Bt = get_B ( t ); */
+    /*   if ( debug ) { */
+    /*     Bt.print ( "Bt = " ); */
+    /*   } */
+    /*   arma::mat Bt_inv = Bt.i(); */
+    /*   if ( debug ) { */
+    /*     Bt_inv.print ( "Bt_inv = " ); */
+    /*   } */
 
-      return Bt_inv * Ht * Bt_inv.t();
-    }
+    /*   return Bt_inv * Ht * Bt_inv.t(); */
+    /* } */
 
 
     /**
@@ -159,6 +159,7 @@ namespace cmmr
     void UpdateModel();
 
     void UpdateBeta();
+    void UpdateGamma();
 
   private:
 
@@ -183,66 +184,66 @@ namespace cmmr
     /*   } */
     /* } */
 
-    arma::mat get_H ( const int i ) const {
+    /* arma::mat get_H ( const int i ) const { */
 
-      int debug = 0;
-      arma::mat Hi = arma::eye ( n_atts_, n_atts_ );
-      Hi.diag() = Ulmd_.row ( i - 1 );
-      if ( debug ) {
-        Hi.print ( "Hi = " );
-      }
+    /*   int debug = 0; */
+    /*   arma::mat Hi = arma::eye ( n_atts_, n_atts_ ); */
+    /*   Hi.diag() = Ulmd_.row ( i - 1 ); */
+    /*   if ( debug ) { */
+    /*     Hi.print ( "Hi = " ); */
+    /*   } */
 
-      return arma::exp ( Hi );
-    }
+    /*   return arma::exp ( Hi ); */
+    /* } */
 
-    arma::mat get_B ( const int i ) const {
-      arma::mat Bi = arma::eye ( n_atts_, n_atts_ );
-      arma::vec Bi_elem = -arma::trans ( Vpsi_.row ( i-1 ) );
+    /* arma::mat get_B ( const int i ) const { */
+    /*   arma::mat Bi = arma::eye ( n_atts_, n_atts_ ); */
+    /*   arma::vec Bi_elem = -arma::trans ( Vpsi_.row ( i-1 ) ); */
 
-      Bi = ltrimat ( n_atts_, Bi_elem );
+    /*   Bi = ltrimat ( n_atts_, Bi_elem ); */
 
-      return Bi;
-    }
+    /*   return Bi; */
+    /* } */
 
     /**
      * Update matrix D (also calculate log_det_Sigma)
      */
-    void Update_D() {
-      int debug = 0;
+    /* void Update_D() { */
+    /*   int debug = 0; */
 
-      log_det_Sigma_ = 0.0;
-      arma::mat result = arma::eye ( n_atts_ * n_dims_, n_atts_ * n_dims_ );
-      for ( int i = 1; i <= n_dims_; ++i ) {
-        arma::mat Dt = get_D ( i );
+    /*   log_det_Sigma_ = 0.0; */
+    /*   arma::mat result = arma::eye ( n_atts_ * n_dims_, n_atts_ * n_dims_ ); */
+    /*   for ( int i = 1; i <= n_dims_; ++i ) { */
+    /*     arma::mat Dt = get_D ( i ); */
 
-        double val;
-        double sign;
-        arma::log_det(val, sign, Dt);
-        log_det_Sigma_ += val;
+    /*     double val; */
+    /*     double sign; */
+    /*     arma::log_det(val, sign, Dt); */
+    /*     log_det_Sigma_ += val; */
 
-        int rindex = ( i - 1 ) * n_atts_;
-        int cindex = ( i - 1 ) * n_atts_;
-        result ( rindex, cindex, arma::size ( Dt ) ) = Dt;
+    /*     int rindex = ( i - 1 ) * n_atts_; */
+    /*     int cindex = ( i - 1 ) * n_atts_; */
+    /*     result ( rindex, cindex, arma::size ( Dt ) ) = Dt; */
 
-        if ( debug ) {
-          result.print ( "result = " );
-        }
-      }
+    /*     if ( debug ) { */
+    /*       result.print ( "result = " ); */
+    /*     } */
+    /*   } */
 
-      D_ = result;
-    }
+    /*   D_ = result; */
+    /* } */
 
-    void Update_Sigma() {
-      Update_D();
-      Update_T();
+    /* void Update_Sigma() { */
+    /*   Update_D(); */
+    /*   Update_T(); */
 
-      arma::mat D_inv = D_.i();
-      arma::mat T_inv = T_.i();
+    /*   arma::mat D_inv = D_.i(); */
+    /*   arma::mat T_inv = T_.i(); */
 
-      Sigma_ = T_inv * D_ * T_inv.t();
-      Sigma_inv_ = T_.t() * D_inv * T_;
+    /*   Sigma_ = T_inv * D_ * T_inv.t(); */
+    /*   Sigma_inv_ = T_.t() * D_inv * T_; */
 
-    }
+    /* } */
   };
 }
 

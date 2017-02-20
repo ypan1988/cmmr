@@ -59,7 +59,7 @@ namespace cmmr {
     arma::mat Yi;
     if (i == 0) Yi = Y_.rows(0, n_atts_ * m_(0)-1);
     else {
-      int index = n_atts_ * arma::sum(m_subvec(0, i - 1));
+      int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
       Yi = Y_.rows(index, index + n_atts_ * m_(i) -1);
     }
 
@@ -70,7 +70,7 @@ namespace cmmr {
     arma::mat Xi;
     if (i==0) Xi = X_.rows(0, n_atts_ * m_(0)-1);
     else {
-      int index = n_atts_ * arma::sum(m_subvec(0, i - 1));
+      int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
       Xi = X_.rows(index, index + n_atts_ * m_(i) -1);
     }
 
@@ -90,7 +90,7 @@ namespace cmmr {
           first_index += m_(idx) * (m_(idx) - 1) / 2 - 1;
         }
         first_index *= n_atts_;
-        arma::uword last_index = first_index + n_atts_ * m_(idx) * (m_(idx) - 1) / 2 - 1;
+        arma::uword last_index = first_index + n_atts_ * m_(i) * (m_(i) - 1) / 2 - 1;
         Ui = U_.rows(first_index, last_index);
       }
     }
@@ -102,7 +102,7 @@ namespace cmmr {
     arma::mat Vi;
     if (i==0) Vi = V_.rows(0, m_(0)-1);
     else {
-      int index = arma::sum(m_subvec(0, i - 1));
+      int index = arma::sum(m_.subvec(0, i - 1));
       Vi = V_.rows(index, index + m_(i) -1);
     }
 
@@ -113,7 +113,7 @@ namespace cmmr {
     arma::mat Wi;
     if (i==0) Wi = W_.rows(0, m_(0)-1);
     else {
-      int index = arma::sum(m_subvec(0, i - 1));
+      int index = arma::sum(m_.subvec(0, i - 1));
       Wi = W_.rows(index, index + m_(i) -1);
     }
 
@@ -124,7 +124,7 @@ namespace cmmr {
     arma::mat Residi;
     if (i == 0) Residi = Resid_.rows(0, n_atts_ * m_(0)-1);
     else {
-      int index = n_atts_ * arma::sum(m_subvec(0, i - 1));
+      int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
       Residi = Resid_.rows(index, index + n_atts_ * m_(i) -1);
     }
 
@@ -167,7 +167,7 @@ namespace cmmr {
   }
 
   arma::mat mcbd::get_T(const arma::uword i, const arma::uword t, const arma::uword k ) const {
-    int debug = 0;
+    //int debug = 0;
 
     int mat_cnt = 0;
     if (i == 0) mat_cnt = 0;
@@ -177,7 +177,7 @@ namespace cmmr {
       }
     }
 
-    for (int idx = 1; idx <= t; ++idx) {
+    for (arma::uword idx = 1; idx <= t; ++idx) {
       if ( idx != t ) {
         mat_cnt += idx;
       } else {
@@ -240,7 +240,7 @@ namespace cmmr {
   }
 
   void mcbd::UpdateMcbd ( const arma::vec &x ) {
-    int debug = 0;
+    //    int debug = 0;
     UpdateParam( x );
     std::cout << "params updated..." << std::endl;
     UpdateModel();
@@ -308,7 +308,7 @@ namespace cmmr {
     }
   }
 
-  void CovMcbd::UpdateModel() {
+  void mcbd::UpdateModel() {
     int debug = 0;
 
     switch (free_param_) {
@@ -364,65 +364,82 @@ namespace cmmr {
     set_beta(beta);
   }
 
-  double CovMcbd::operator() ( const arma::vec &x ) {
-    int debug = 1;
+  void mcbd::UpdateGamma() {
+    arma::mat CDC;
+    arma::vec CDE;
 
-    UpdateCovMcbd ( x );
-
-    if ( debug ) std::cout << "before for loop" << std::endl;
-
-    double result = 0.0;
-    for ( int i = 1; i <= n_subs_; ++i ) {
-      if ( debug ) std::cout << "i = " << i << std::endl;
-      arma::vec ri = get_Resid ( i );
-      //if ( debug ) ri.print("ri = ");
-      result += arma::as_scalar ( ri.t() * Sigma_inv_ * ri );
+    for (arma::uword i = 0; i != n_sub_; ++i) {
+      CDC +=;
+      CDE +=;
     }
 
+    arma::vec gamma = CDC.i() * CDE;
+    set_gamma(gamma);
+  }
+
+  double mcbd::operator(const arma::vec &x) {
+    int debug = 1;
+
+    UpdateMcbd(x);
+
+    if (debug) std::cout << "mcbd::operator(): before for loop" << std::endl;
+    double result = 0.0;
+    for (arma::uword i = 0; i != n_subs_; ++i) {
+      arma::vec ri = get_Resid(i);
+      arma::mat Sigmai_inv = get_Sigma_inv(i);
+      
+      result += arma::as_scalar ( ri.t() * Sigmai_inv * ri );
+    }
     result += log_det_Sigma_;
-
-    if ( debug ) std::cout << "loglik = " << result << std::endl;
-
+    
+    if (debug) std::cout << "mcbd::operator(): loglik = " << result << std::endl;
+    
     return result;
   }
+  
+  void mcbd::Gradient(const arma::vec &x, arma::vec &grad) {
 
-
-  void CovMcbd::Gradient ( const arma::vec& x, arma::vec& grad ) {
-    int debug = 0;
-    UpdateCovMcbd ( x );
-    arma::vec grad1, grad2, grad3, grad4;
-
-    switch ( free_param_ ) {
-    case 0:
-      Grad1 ( grad1 );
-    }
-
+    UpdateMcbd(x);
+    
   }
 
-  void CovMcbd::Grad1 ( arma::vec& grad1 ) {
-    int debug = 1;
+  // void CovMcbd::Gradient ( const arma::vec& x, arma::vec& grad ) {
+  //   int debug = 0;
+  //   UpdateCovMcbd ( x );
+  //   arma::vec grad1, grad2, grad3, grad4;
 
-    int lbta = bta_.n_elem;
-    grad1 = arma::zeros<arma::vec> ( lbta );
-    for ( int i = 1; i <= n_subs_; ++i ) {
-      arma::vec Yi = get_Y ( i );
-      arma::mat Xi = get_X ( i );
-      grad1 += Xi.t() * Sigma_inv_ * ( Yi - Xi * bta_ );
-    }
+  //   switch ( free_param_ ) {
+  //   case 0:
+  //     Grad1 ( grad1 );
+  //   }
 
-    if ( debug ) grad1.print ( "grad1 = " );
-  }
+  // }
 
-  void CovMcbd::Grad2 ( arma::vec& grad2 ) {
-    int debug = 1;
+  // void CovMcbd::Grad1 ( arma::vec& grad1 ) {
+  //   int debug = 1;
 
-    int llmd = lmd_.n_elem;
-    grad2 = arma::zeros<arma::vec> ( llmd );
+  //   int lbta = bta_.n_elem;
+  //   grad1 = arma::zeros<arma::vec> ( lbta );
+  //   for ( int i = 1; i <= n_subs_; ++i ) {
+  //     arma::vec Yi = get_Y ( i );
+  //     arma::mat Xi = get_X ( i );
+  //     grad1 += Xi.t() * Sigma_inv_ * ( Yi - Xi * bta_ );
+  //   }
 
-    arma::vec oneJ = arma::ones<arma::vec> ( n_atts_ );
-    arma::vec oneT = arma::ones<arma::vec> ( n_dims_ );
-    arma::vec oneTJ = arma::ones<arma::vec> ( n_dims_ * n_atts_ );
-    grad2 = n_dims_ * arma::kron ( oneJ, W_.t() * oneT );
+  //   if ( debug ) grad1.print ( "grad1 = " );
+  // }
 
-    if ( debug ) grad2.print("grad2 = ");
-  }
+  // void CovMcbd::Grad2 ( arma::vec& grad2 ) {
+  //   int debug = 1;
+
+  //   int llmd = lmd_.n_elem;
+  //   grad2 = arma::zeros<arma::vec> ( llmd );
+
+  //   arma::vec oneJ = arma::ones<arma::vec> ( n_atts_ );
+  //   arma::vec oneT = arma::ones<arma::vec> ( n_dims_ );
+  //   arma::vec oneTJ = arma::ones<arma::vec> ( n_dims_ * n_atts_ );
+  //   grad2 = n_dims_ * arma::kron ( oneJ, W_.t() * oneT );
+
+  //   if ( debug ) grad2.print("grad2 = ");
+  // }
+}
