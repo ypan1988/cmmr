@@ -103,6 +103,8 @@ namespace cmmr
     arma::mat get_W(const arma::uword i) const;
     arma::vec get_Resid(const arma::uword i) const;
 
+    arma::mat get_U(const arma::uword i, const arma::uword t, const arma::uword k) const;
+
     arma::vec get_theta() const { return tht_; }
     arma::vec get_beta() const { return bta_; }
     arma::vec get_gamma() const { return gma_; }
@@ -126,21 +128,20 @@ namespace cmmr
     arma::mat get_D_inv(const arma::uword i) const;
     arma::mat get_Sigma_inv(const arma::uword i) const;
 
-    double operator() ( const arma::vec &x );
+    double operator() (const arma::vec &x);
     void Gradient(const arma::vec &x, arma::vec &grad);
     void Grad1(arma::vec &grad1);
     void Grad2(arma::vec &grad2);
 
-    void UpdateMcbd ( const arma::vec &x );
-    void UpdateParam ( const arma::vec &x );
+    void UpdateMcbd (const arma::vec &x);
+    void UpdateParam (const arma::vec &x);
     void UpdateModel();
 
     void UpdateBeta();
     //void UpdateGamma();
 
   private:
-
-    double log_det_Sigma_;      /**< $\log|\Sigma_i|$ in loglik  */
+    arma::mat get_C(const arma::uword i) const;
 
     /* void gma_vec2mat() { */
     /*   int q = poly_ ( 3 ); */
