@@ -398,23 +398,66 @@ namespace cmmr {
   }
   
   void mcbd::Gradient(const arma::vec &x, arma::vec &grad) {
-
     UpdateMcbd(x);
-    
+
+    arma::uword ltht, lbta, lgma, lpsi, llmd;
+    lbta = (n_atts_ * poly_(0)) * 1;
+    lgma = (n_atts_ * poly_(1)) * n_atts_;
+    lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
+    llmd = poly_(3)             * n_atts_;
+    ltht = lbta + lgma + lpsi + llmd;
+
+    arma::vec grad1, grad2;
+    switch (free_param_) {
+    case 0:
+      Grad1(grad1);
+      Grad2(grad2);
+
+      grad = arma::zeros<arma::vec>(ltht);
+      grad.subvec(0, lbta - 1) = grad1;
+      grad.subvec(lbta, ltht - 1) = grad2;
+
+      break;
+
+    case 1:
+      Grad1(grad);
+      break;
+
+    case 2:
+      Grad2(grad);
+      break;
+
+    default: Rcpp::Rcout << "wrong value for free_param_" << std::endl;
+    }
   }
 
-  // void CovMcbd::Gradient ( const arma::vec& x, arma::vec& grad ) {
-  //   int debug = 0;
-  //   UpdateCovMcbd ( x );
-  //   arma::vec grad1, grad2, grad3, grad4;
+  void mcbd::Grad1(arma::vec &grad1) {
+    arma::uword lbta = (n_atts_ * poly_(0)) * 1;
+    grad1 = arma::zeros<arma::vec>(lbta);
+    for (arma::uword i = 0; i != n_subs_; ++i ) {
+      arma::vec Yi = get_Y(i);
+      arma::mat Xi = get_X(i);
+      arma::mat Sigmai_inv = get_Sigma_inv(i);
+      
+      grad1 += Xi.t() * Sigmai_inv_ * ( Yi - Xi * bta_ );
+    }
+  }
 
-  //   switch ( free_param_ ) {
-  //   case 0:
-  //     Grad1 ( grad1 );
-  //   }
+  void mcbd::Grad2(arma::vec &grad2) {
+    arma::uword lgma, lpsi, llmd;
+    lgma = (n_atts_ * poly_(1)) * n_atts_;
+    lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
+    llmd = poly_(3)             * n_atts_;
 
-  // }
+    arma::vec grad2_gma = arma::zeros<arma::vec>(lgma);
+    arma::vec grad2_psi = arma::zeros<arma::vec>(lpsi);
+    arma::vec grad2_lmd = arma::zeros<arma::vec>(llmd);
 
+    for (arma::uword i = 0; i != n_subs_; ++i) {
+    }
+    
+  }
+  
   // void CovMcbd::Grad1 ( arma::vec& grad1 ) {
   //   int debug = 1;
 
