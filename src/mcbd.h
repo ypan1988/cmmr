@@ -122,33 +122,10 @@ namespace cmmr
     arma::mat get_T_bar(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_bar(const arma::uword i, const arma::uword t) const;
 
-    arma::mat get_D(const arma::uword i, const arma::uword t) const;
-    arma::mat get_D(const arma::uword i) const;
+    arma::mat get_D_inv(const arma::uword i, const arma::uword t) const;
+    arma::mat get_D_inv(const arma::uword i) const;
     arma::mat get_Sigma_inv(const arma::uword i) const;
 
-    /* arma::mat get_D (const arma::uword i, const arma::uword t) const { */
-    /*   int debug = 0; */
-
-    /*   arma::mat Ht = get_H ( t ); */
-    /*   if ( debug ) { */
-    /*     Ht.print ( "Ht = " ); */
-    /*   } */
-    /*   arma::mat Bt = get_B ( t ); */
-    /*   if ( debug ) { */
-    /*     Bt.print ( "Bt = " ); */
-    /*   } */
-    /*   arma::mat Bt_inv = Bt.i(); */
-    /*   if ( debug ) { */
-    /*     Bt_inv.print ( "Bt_inv = " ); */
-    /*   } */
-
-    /*   return Bt_inv * Ht * Bt_inv.t(); */
-    /* } */
-
-
-    /**
-     * Calculate -2 * loglik as a object function.
-     */
     double operator() ( const arma::vec &x );
     void Gradient(const arma::vec &x, arma::vec &grad);
     void Grad1(arma::vec &grad1);
@@ -159,15 +136,9 @@ namespace cmmr
     void UpdateModel();
 
     void UpdateBeta();
-    void UpdateGamma();
+    //void UpdateGamma();
 
   private:
-
-
-    arma::mat D_;               /**< matrix $D$ in MCBD */
-    arma::mat T_;               /**< matrix $T$ in MCBD */
-    arma::mat Sigma_;           /**< matrix $\Sigma$ in MCBD */
-    arma::mat Sigma_inv_;       /**< inverse of $\Sigma$ */
 
     double log_det_Sigma_;      /**< $\log|\Sigma_i|$ in loglik  */
 
@@ -182,27 +153,6 @@ namespace cmmr
     /*     // MatGma_.print ( "GAMMA = " ); */
 
     /*   } */
-    /* } */
-
-    /* arma::mat get_H ( const int i ) const { */
-
-    /*   int debug = 0; */
-    /*   arma::mat Hi = arma::eye ( n_atts_, n_atts_ ); */
-    /*   Hi.diag() = Ulmd_.row ( i - 1 ); */
-    /*   if ( debug ) { */
-    /*     Hi.print ( "Hi = " ); */
-    /*   } */
-
-    /*   return arma::exp ( Hi ); */
-    /* } */
-
-    /* arma::mat get_B ( const int i ) const { */
-    /*   arma::mat Bi = arma::eye ( n_atts_, n_atts_ ); */
-    /*   arma::vec Bi_elem = -arma::trans ( Vpsi_.row ( i-1 ) ); */
-
-    /*   Bi = ltrimat ( n_atts_, Bi_elem ); */
-
-    /*   return Bi; */
     /* } */
 
     /**
@@ -233,17 +183,6 @@ namespace cmmr
     /*   D_ = result; */
     /* } */
 
-    /* void Update_Sigma() { */
-    /*   Update_D(); */
-    /*   Update_T(); */
-
-    /*   arma::mat D_inv = D_.i(); */
-    /*   arma::mat T_inv = T_.i(); */
-
-    /*   Sigma_ = T_inv * D_ * T_inv.t(); */
-    /*   Sigma_inv_ = T_.t() * D_inv * T_; */
-
-    /* } */
   };
 }
 
