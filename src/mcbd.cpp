@@ -134,31 +134,24 @@ namespace cmmr {
   arma::mat mcbd::get_U(const arma::uword i, const arma::uword t, const arma::uword k) const {
     arma::mat Uitk;
     if (m_(i) != 1) {
-      arma::uword index = 0;
-      for (arma::uword idx_i = 0; idx_i <= i; ++idx_i) {
-        for (arma::uword idx_t = 0; idx_t <= t; ++idx_t) {
-          for (arma::uword idx_k = 0; idx_k <=; ++idx_k) {
-          }
-        }
+      arma::uword rindex = 0;
+      for (arma::uword idx_i = 0; idx_i != i; ++idx_i) {
+	rindex += m_(idx_i) * (m_(idx_i) - 1) / 2;
       }
 
-
-      if (i == 0) {
-        arma::uword first_index = 0;
-        arma::uword last_index = n_atts_ * m_(0) * (m_(0) - 1) / 2 - 1;
-        Ui = U_.rows(first_index, last_index);
-      } else {
-        arma::uword first_index = 0;
-        for (arma::uword idx = 0; idx != i; ++idx) {
-          first_index += m_(idx) * (m_(idx) - 1) / 2 - 1;
-        }
-        first_index *= n_atts_;
-        arma::uword last_index = first_index + n_atts_ * m_(i) * (m_(i) - 1) / 2 - 1;
-        Ui = U_.rows(first_index, last_index);
+      for (arma::uword idx_t = 1; idx_t < t; ++idx_t) {
+	for (arma::uword idx_k = 0; idx_k < idx_t; ++idx_k) {
+	  ++rindex;
+	}
       }
+      
+      rindex += k;
+      rindex *= n_atts_;
+
+      Uitk = U_.rows(rindex, rindex + n_atts_);      
     }
 
-    return Ui;
+    return Uitk;
   }
 
   void mcbd::set_theta(const arma::vec &x) {
@@ -481,7 +474,9 @@ namespace cmmr {
       arma::mat Tit_bar = get_T_bar(i, t);
       arma::mat eye_J   = arma::eye(n_atts_, n_atts_);
       for (arma::uword k = 0; k != t; ++k) {
-        
+	arma::vec eik  = get_e(i, k);
+	arma::mat Aitk = Tit_bar * get_U(i, t, k);
+	Cit += arma::kron(eik.t(), Aitk);
       }
     }
 
@@ -493,7 +488,7 @@ namespace cmmr {
     arma::mat Ci = arma::zeros<arma::mat>(n_atts_ * m_(i), lgma);
 
     for (arma::uword t = 1; t != m_(i); ++t) {
-      amra::mat Cit = get_C(i, t);
+      arma::mat Cit = get_C(i, t);
 
       arma::uword rindex = n_atts_ * t;
       Ci.rows(rindex, rindex + n_atts_ - 1) = Cit;
@@ -502,6 +497,17 @@ namespace cmmr {
     return Ci;
   }
 
+  arma::mat mcbd::get_e(const arma::uword i, const arma::uword t) const {
+    arma::mat Ti = get_T(i);
+    arma::mat Yi = get_Y(i);
+
+    arma::mat ei = Ti * Yi;
+    arma::uword rindex = n_atts_ * t;
+    
+    return ei.rows(rindex, rindex + n_atts_ - 1);
+  }
+
+  
   // void CovMcbd::Grad1 ( arma::vec& grad1 ) {
   //   int debug = 1;
 

@@ -141,8 +141,11 @@ namespace cmmr
     //void UpdateGamma();
 
   private:
+    arma::mat get_C(const arma::uword i, const arma::uword t) const;
     arma::mat get_C(const arma::uword i) const;
 
+    arma::mat get_e(const arma::uword i, const arma::uword t) const;
+    
     /* void gma_vec2mat() { */
     /*   int q = poly_ ( 3 ); */
     /*   for ( int i = 1; i <= n_atts_; ++i ) { */
