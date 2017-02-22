@@ -52,7 +52,7 @@ NULL
 
 #' @rdname modular
 #' @export
-mldFormula <- function(formular, data = NULL, quad = c(3, 3, 3, 3), 
+mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3), 
                        cov.method = c('mcd', 'acd', 'hpc'), 
                        control = jmcmControl(), start=NULL)
 {
@@ -79,7 +79,7 @@ mldFormula <- function(formular, data = NULL, quad = c(3, 3, 3, 3),
   
   index <- order(id, time)
   
-  Y    <- Y[index, ]
+  Y    <- as.matrix(Y[index, ]) 
   id   <- id[index, ]
   time <- time[index, ]
   
@@ -127,6 +127,8 @@ mldFormula <- function(formular, data = NULL, quad = c(3, 3, 3, 3),
   V <- cbind(V, Vtmp)
   W <- cbind(W, Wtmp)
   
+  if (debug) cat("Is Y a matrix: ", is.matrix(Y), "\n")
+  
   list(m = m, Y = Y, X = X, U = U, V = V, W = W, time = time)
 }
 
@@ -134,24 +136,46 @@ mldFormula <- function(formular, data = NULL, quad = c(3, 3, 3, 3),
 #' @export 
 optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
 {
+  debug <- 1
+  if (debug) cat("optimizeMcmmr():\n")
+  
   missStart <- is.null(start)
   
-  #lbta <- 
-  #lgma <-
-  #lpsi <-
-  #llmd <-
+  J <- dim(Y)[2]
+  
+  lbta <- (J * dim(X)[2]) * 1
+  lgma <- (J * dim(U)[2]) * J
+  lpsi <- dim(V)[2]       * (J * (J - 1) / 2)
+  llmd <- dim(W)[2]       * J
 
-  if (!missingStart && (lbta+lgma+lpsi+llmd) != length(start)) 
+  if (!missStart && (lbta+lgma+lpsi+llmd) != length(start)) 
     Stop("Incorrect start input")
   
   if (missStart) {
     
+    bta0 <- NULL
+    lmd0 <- NULL
+    for (j in 1:J) {
+      lm.obj <- lm(Y[,J] ~ X - 1)
+      bta0 <- c(bta0, coef(lm.obj))
+      
+      resid(lm.obj) -> res
+      lmd0 <- c(lmd0, coef(lm(log(res^2) ~ W - 1)))
+    }
+    
+    gma0 <- rep(0, lgma)
+    psi0 <- rep(0, lpsi)
+
+    if (debug) cat("bta0[", length(bta0),"]: ", bta0, "\n")
+    if (debug) cat("gma0[", length(gma0),"]: ", gma0, "\n")
+    if (debug) cat("psi0[", length(psi0),"]: ", psi0, "\n")
+    if (debug) cat("lmd0[", length(lmd0),"]: ", lmd0, "\n")
     
     start <- c(bta0, gma0, psi0, lmd0)
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
   }
     
-  est <- mcbd_estimation(m, Y, X, U, V, W, start, Y, control$trace)  
+  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)  
 }
 
 

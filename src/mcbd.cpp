@@ -10,7 +10,7 @@ namespace cmmr {
     n_atts_(Y.n_cols), n_subs_(m.n_elem), m_(m), V_(V), W_(W),
     mcbd_mode_obj_(mcbd_mode_obj)
   {
-    int debug = 1;
+    int debug = 0;
 
     if (debug) {
       std::cout << "n_atts_ = " << n_atts_ << std::endl
@@ -29,7 +29,7 @@ namespace cmmr {
     Y_ = arma::vectorise(Y.t());
 
     // initialize X_
-    for(arma::uword idx = 0; idx != X.n_rows; ++idx)
+    for(arma::uword idx = 0; idx != X.n_rows; ++idx) 
       X_ = arma::join_cols(X_, arma::kron(eye_J, X.row(idx)));
 
     // initialize U_
@@ -48,7 +48,9 @@ namespace cmmr {
     arma::vec x = arma::zeros<arma::vec>(ltht);
     UpdateMcbd(x);
 
-    if ( debug ) std::cout << "mcbd obj created..." << std::endl;
+    if (debug) std::cout << "mcbd obj created..." << std::endl;
+    if (debug) X_.rows(0, 9).print("X = ");
+    if (debug) U_.rows(0, 9).print("U = ");
   }
 
   arma::uword mcbd::get_m(const arma::uword i) const {
@@ -121,10 +123,21 @@ namespace cmmr {
   }
 
   arma::vec mcbd::get_Resid ( const arma::uword i ) const {
+    int debug = 0;
+    
+    if (debug) std::cout << "mcbd::get_Resid(): "
+			 << "length(Resid_) = " << Resid_.n_rows
+			 << std::endl; 
+    
     arma::mat Residi;
     if (i == 0) Residi = Resid_.rows(0, n_atts_ * m_(0) - 1);
-    else {
+    else {    
       int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
+
+      if (debug) std::cout << "mcbd::get_Resid(): "
+			   << "index = " << index
+			   << std::endl; 
+
       Residi = Resid_.rows(index, index + n_atts_ * m_(i) - 1);
     }
 
@@ -148,7 +161,7 @@ namespace cmmr {
       rindex += k;
       rindex *= n_atts_;
 
-      Uitk = U_.rows(rindex, rindex + n_atts_);      
+      Uitk = U_.rows(rindex, rindex + n_atts_ - 1);      
     }
 
     return Uitk;
@@ -230,10 +243,16 @@ namespace cmmr {
 
   arma::mat mcbd::get_T_bar(const arma::uword i, const arma::uword t) const {
 
+    int debug = 0;
+
+    if (debug) std::cout << "mcbd::get_T_bar(): "
+			 << "size(VPsi_): " << arma::size(VPsi_)
+			 << std::endl;
+    
     arma::uword index = 0;
-    for (arma::uword idx = 0; idx != i; ++idx) {
-      index += m_(idx) * (m_(idx) - 1) / 2;
-    }
+    if (i != 0) index = arma::sum(m_.rows(0, i-1));
+
+    if (debug) std::cout << "mcbd::get_T_bar(): index = " << index << std::endl;
     arma::vec Ti_bar_elem = -arma::trans(VPsi_.row(index + t));
 
     arma::mat Ti_bar = arma::eye(n_atts_, n_atts_);
@@ -245,9 +264,8 @@ namespace cmmr {
   arma::mat mcbd::get_D_bar(const arma::uword i, const arma::uword t) const {
 
     arma::uword index = 0;
-    for (arma::uword idx = 0; idx != i; ++idx) {
-      index += m_(idx) * (m_(idx) - 1) / 2;
-    }
+    if (i != 0) index = arma::sum(m_.rows(0, i-1));
+
     arma::vec Di_bar_elem = -arma::trans(WLmd_.row(index + t));
 
     arma::mat Di_bar = arma::eye(n_atts_, n_atts_);
@@ -257,7 +275,11 @@ namespace cmmr {
   }
 
   arma::mat mcbd::get_D_inv(const arma::uword i, const arma::uword t) const {
+    int debug = 0;
+
+    if (debug) std::cout << "mcbd::get_D_inv(i,t): getting Tit_bar" << std::endl;
     arma::mat Tit_bar = get_T_bar(i, t);
+    if (debug) std::cout << "mcbd::get_D_inv(i,t): getting Dit_bar" << std::endl;
     arma::mat Dit_bar = get_D_bar(i, t);
     arma::mat Dit_bar_inv = arma::diagmat(arma::pow(Dit_bar.diag(), -1));
     arma::mat Dit_inv = Tit_bar.t() * Dit_bar_inv * Tit_bar;
@@ -266,9 +288,13 @@ namespace cmmr {
   }
 
   arma::mat mcbd::get_D_inv(const arma::uword i) const {
+    int debug = 0;
+    
     arma::mat Di_inv = arma::zeros<arma::mat>(n_atts_ * m_(i), n_atts_ * m_(i));
 
+    if (debug) std::cout << "mcbd::get_D_inv(): before for loop" << std::endl;
     for(arma::uword t = 0; t != m_(i); ++t) {
+      if (debug) std::cout << "mcbd::get_D_inv(): getting Dit_inv" << std::endl;
       arma::mat Dit_inv = get_D_inv(i, t);
 
       arma::uword rindex = t * n_atts_;
@@ -276,12 +302,24 @@ namespace cmmr {
 
       Di_inv(rindex, cindex, arma::size(Dit_inv)) = Dit_inv;
     }
+    if (debug) std::cout << "mcbd::get_D_inv(): after for loop" << std::endl;
 
     return Di_inv;
   }
 
   arma::mat mcbd::get_Sigma_inv(const arma::uword i) const {
+    int debug = 0;
+
+    if (debug)
+      std::cout << "mcbd::get_Sigma_inv(): "
+		<< "getting Ti..." << std::endl;
+		 
     arma::mat Ti = get_T(i);
+
+    if (debug)
+      std::cout << "mcbd::get_Sigma_inv(): "
+		<< "getting Di_inv..." << std::endl;
+    
     arma::mat Di_inv = get_D_inv(i);
 
     arma::mat Sigmai_inv = Ti.t() * Di_inv * Ti;
@@ -378,19 +416,22 @@ namespace cmmr {
   }
 
   double mcbd::operator()(const arma::vec &x) {
-    int debug = 1;
+    int debug = 0;
 
     UpdateMcbd(x);
 
     if (debug) std::cout << "mcbd::operator(): before for loop" << std::endl;
     double result = 0.0;
     for (arma::uword i = 0; i != n_subs_; ++i) {
+      if (debug) std::cout << "iter " << i << ": getting ri..." << std::endl;
       arma::vec ri = get_Resid(i);
+      if (debug) std::cout << "iter " << i << ": getting Sigmai_inv..." << std::endl;
       arma::mat Sigmai_inv = get_Sigma_inv(i);
 
       result += arma::as_scalar(ri.t() * Sigmai_inv * ri);
     }
-
+    if (debug) std::cout << "mcbd::operator(): after for loop" << std::endl;
+    
     arma::vec one_M = arma::ones<arma::vec>(arma::sum(m_));
     arma::vec one_J = arma::ones<arma::vec>(n_atts_);
     double log_det_Sigma = arma::as_scalar(one_M.t() * WLmd_ * one_J);
@@ -403,6 +444,8 @@ namespace cmmr {
   }
 
   void mcbd::Gradient(const arma::vec &x, arma::vec &grad) {
+    int debug = 0;
+    
     UpdateMcbd(x);
 
     arma::uword ltht, lbta, lgma, lpsi, llmd;
@@ -415,7 +458,9 @@ namespace cmmr {
     arma::vec grad1, grad2;
     switch (free_param_) {
     case 0:
+      if (debug) std::cout << "mcbd::Gradient(): Calculating grad1..." << std::endl;
       Grad1(grad1);
+      if (debug) std::cout << "mcbd::Gradient(): Calculating grad2..." << std::endl;
       Grad2(grad2);
 
       grad = arma::zeros<arma::vec>(ltht);
@@ -449,34 +494,67 @@ namespace cmmr {
   }
 
   void mcbd::Grad2(arma::vec &grad2) {
+    int debug = 0;
+
     arma::uword lgma, lpsi, llmd;
     lgma = (n_atts_ * poly_(1)) * n_atts_;
     lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
     llmd = poly_(3)             * n_atts_;
 
-    arma::vec grad2_gma = arma::zeros<arma::vec>(lgma);
-    arma::vec grad2_psi = arma::zeros<arma::vec>(lpsi);
-    arma::vec grad2_lmd = arma::zeros<arma::vec>(llmd);
+    arma::vec grad_gma = arma::zeros<arma::vec>(lgma);
+    arma::vec grad_psi = arma::zeros<arma::vec>(lpsi);
+    arma::vec grad_lmd = arma::zeros<arma::vec>(llmd);
 
+    if (debug) std::cout << "mcbd::Grad2(): before for loop" << std::endl;    
     for (arma::uword i = 0; i != n_subs_; ++i) {
+      if (debug) std::cout << "mcbd::Grad2(): iter " << i << ": "
+			   << "getting Ci" << std::endl;
+      arma::mat Ci = get_C(i);
+      if (debug) std::cout << "mcbd::Grad2(): iter " << i << ": "
+			   << "getting Di_inv" << std::endl;
       arma::mat Di_inv = get_D_inv(i);
+      if (debug) std::cout << "mcbd::Grad2(): iter " << i << ": "
+			   << "getting ei" << std::endl;
+      arma::mat ei = get_e(i);
 
+      if (debug) std::cout << "mcbd::Grad2(): iter " << i << ": "
+			   << "size(Ci) = " << arma::size(Ci) << std::endl;
+      if (debug) std::cout << "mcbd::Grad2(): iter " << i << ": "
+			   << "size(Di_inv) = " << arma::size(Di_inv) << std::endl;
+      if (debug) std::cout << "mcbd::Grad2(): iter " << i << ": "
+			   << "size(ei) = " << arma::size(ei) << std::endl;
+      if (debug) std::cout << "mcbd::Grad2(): iter " << i << ": "
+			   << "size(gma_) = " << arma::size(gma_) << std::endl;
+
+      
+      grad_gma += Ci.t() * Di_inv * (ei - Ci * gma_);
     }
-
+    if (debug) std::cout << "mcbd::Grad2(): after for loop" << std::endl;
+	
+    grad2 = dragonwell::join_vecs({grad_gma, grad_psi, grad_lmd});
   }
 
   arma::mat mcbd::get_C(const arma::uword i, const arma::uword t) const {
+    int debug = 0;
+    
     arma::uword lgma = (n_atts_ * poly_(1)) * n_atts_;
     arma::mat Cit = arma::zeros<arma::mat>(n_atts_, lgma);
-
+    if (debug) std::cout << "mcbd::get_C(i, t): size(Cit) = " << arma::size(Cit) << std::endl;
+    
     if (t == 0) return Cit;
     else {
-      arma::mat Tit_bar = get_T_bar(i, t);
+      // arma::mat Tit_bar = get_T_bar(i, t);
       arma::mat eye_J   = arma::eye(n_atts_, n_atts_);
       for (arma::uword k = 0; k != t; ++k) {
 	arma::vec eik  = get_e(i, k);
-	arma::mat Aitk = Tit_bar * get_U(i, t, k);
-	Cit += arma::kron(eik.t(), Aitk);
+	
+	if (debug) std::cout << "mcbd::get_C(i, t): size(eik) = " << arma::size(eik) << std::endl;
+	if (debug) std::cout << "mcbd::get_C(i, t): size(Uitk) = " << arma::size(get_U(i, t, k)) << std::endl;
+	if (debug) get_U(i,t,k).print("Uitk = ");
+	
+	// arma::mat Aitk = Tit_bar * get_U(i, t, k);
+	// Cit += arma::kron(eik.t(), Aitk);
+	Cit += arma::kron(eik.t(), get_U(i, t, k));
       }
     }
 
@@ -484,6 +562,9 @@ namespace cmmr {
   }
 
   arma::mat mcbd::get_C(const arma::uword i) const {
+    int debug = 0;
+    if (debug) std::cout << "mcbd::get_C():" << std::endl;
+
     arma::uword lgma = (n_atts_ * poly_(1)) * n_atts_;
     arma::mat Ci = arma::zeros<arma::mat>(n_atts_ * m_(i), lgma);
 
@@ -492,6 +573,8 @@ namespace cmmr {
 
       arma::uword rindex = n_atts_ * t;
       Ci.rows(rindex, rindex + n_atts_ - 1) = Cit;
+      if (debug) std::cout << "mcbd::get_C(): for loop" << std::endl;
+      if (debug) Ci.print("Ci = ");
     }
 
     return Ci;
@@ -507,6 +590,12 @@ namespace cmmr {
     return ei.rows(rindex, rindex + n_atts_ - 1);
   }
 
+  arma::mat mcbd::get_e(const arma::uword i) const {
+    arma::mat Ti = get_T(i);
+    arma::mat Yi = get_Y(i);
+
+    return Ti * Yi;
+  }
   
   // void CovMcbd::Grad1 ( arma::vec& grad1 ) {
   //   int debug = 1;

@@ -14,7 +14,8 @@
 #include <RcppArmadillo.h>
 
 struct mcbd_mode {
-  const arma::uword id_;
+  arma::uword id_;
+  void setid(const arma::uword id) { id_ = id; }
   inline explicit mcbd_mode(const arma::uword id) : id_(id) {}
 };
 
@@ -145,6 +146,7 @@ namespace cmmr
     arma::mat get_C(const arma::uword i) const;
 
     arma::mat get_e(const arma::uword i, const arma::uword t) const;
+    arma::mat get_e(const arma::uword i) const;
     
     /* void gma_vec2mat() { */
     /*   int q = poly_ ( 3 ); */
