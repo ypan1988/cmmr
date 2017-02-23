@@ -79,7 +79,7 @@ namespace cmmr
     arma::vec Xbta_;
     arma::mat UGma_, VPsi_, WLmd_;
     arma::mat Resid_;
-
+    
     const mcbd_mode mcbd_mode_obj_;
 
   public:
@@ -105,6 +105,7 @@ namespace cmmr
     arma::vec get_Resid(const arma::uword i) const;
 
     arma::mat get_U(const arma::uword i, const arma::uword t, const arma::uword k) const;
+    arma::vec get_W(const arma::uword i, const arma::uword t) const;
 
     arma::vec get_theta() const { return tht_; }
     arma::vec get_beta() const { return bta_; }
@@ -121,8 +122,10 @@ namespace cmmr
 
     arma::mat get_T(const arma::uword i, const arma::uword t, const arma::uword k) const;
     arma::mat get_T(const arma::uword i) const;
-
+    
     arma::mat get_T_bar(const arma::uword i, const arma::uword t) const;
+    arma::mat get_T_bar(const arma::uword i) const;
+	
     arma::mat get_D_bar(const arma::uword i, const arma::uword t) const;
 
     arma::mat get_D_inv(const arma::uword i, const arma::uword t) const;
@@ -147,6 +150,12 @@ namespace cmmr
 
     arma::mat get_e(const arma::uword i, const arma::uword t) const;
     arma::mat get_e(const arma::uword i) const;
+
+    arma::vec mcd_TTResid_;
+    void      mcd_UpdateTTResid();
+    arma::vec mcd_get_TTResid(const arma::uword i);
+    arma::mat mcd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const;
+   
     
     /* void gma_vec2mat() { */
     /*   int q = poly_ ( 3 ); */
