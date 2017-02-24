@@ -167,6 +167,14 @@ namespace cmmr {
     return Uitk;
   }
 
+  arma::vec mcbd::get_V(const arma::uword i, const arma::uword t) const {
+    arma::uword rindex = 0;
+    if (i != 0) rindex = arma::sum(m_.rows(0, i-1));
+    rindex += t;
+
+    return V_.row(rindex).t();
+  }
+  
   arma::vec mcbd::get_W(const arma::uword i, const arma::uword t) const {
     arma::uword rindex = 0;
     if (i != 0) rindex = arma::sum(m_.rows(0, i-1));
@@ -294,6 +302,24 @@ namespace cmmr {
     return Di_bar;
   }
 
+  arma::mat mcbd::get_D_bar_inv(const arma::uword i) const {
+    int debug = 0;
+
+    arma::mat Di_bar_inv = arma::zeros<arma::mat>(n_atts_ * m_(i), n_atts_ * m_(i));
+
+    for(arma::uword t = 0; t != m_(i); ++t) {
+      arma::mat Dit_bar = get_D_bar(i, t);
+      arma::mat Dit_bar_inv = arma::diagmat(arma::pow(Dit_bar.diag(), -1));
+
+      arma::uword rindex = t * n_atts_;
+      arma::uword cindex = t * n_atts_;
+
+      Di_bar_inv(rindex, cindex, arma::size(Dit_bar_inv)) = Dit_bar_inv;
+    }
+
+    return Di_bar_inv;
+  }
+  
   arma::mat mcbd::get_D_inv(const arma::uword i, const arma::uword t) const {
     int debug = 0;
 
@@ -523,7 +549,7 @@ namespace cmmr {
   }
 
   void mcbd::Grad2(arma::vec &grad2) {
-    int debug = 0;
+    int debug = 1;
 
     arma::uword lgma, lpsi, llmd;
     lgma = (n_atts_ * poly_(1)) * n_atts_;
@@ -540,20 +566,22 @@ namespace cmmr {
     if (debug) std::cout << "mcbd::Grad2(): before for loop" << std::endl;
     for (arma::uword i = 0; i != n_subs_; ++i) {
 
-      // Calculate grad_gma
+      if (debug) std::cout << "mcbd::Grad2(): Calculate grad_gma" << std::endl;
       arma::mat Ci = get_C(i);
       arma::mat Di_inv = get_D_inv(i);
       arma::mat ei = get_e(i);
 
       grad_gma += Ci.t() * Di_inv * (ei - Ci * gma_);
 
-      // Calculate grad_psi
-      arma::mat Gi = get_G(i);
+      if (debug) std::cout << "mcbd::Grad2(): Calculate grad_psi" << std::endl;
+      if (debug) std::cout << "mcbd::Grad2(): Getting G" << std::endl;	    
+      arma::mat Gi = mcd_get_G(i);
+      if (debug) std::cout << "mcbd::Grad2(): Getting Di_bar_inv" << std::endl;	    
       arma::mat Di_bar_inv = get_D_bar_inv(i);
-      arma::mat epsi = get_TResid(i);
-      grad_psi -= Gi.t() * Di_bar_inv * (epsi + Vi * Psi_);
+      arma::mat epsi = mcd_get_TResid(i);
+      grad_psi -= Gi.t() * Di_bar_inv * (epsi + Gi * Psi_);
 
-      // Calculate grad_lmd
+      if (debug) std::cout << "mcbd::Grad2(): Calculate grad_lmd" << std::endl;
       arma::mat one_T = arma::ones<arma::vec>(m_(i));
       arma::mat Wi = get_W(i);
 
@@ -640,7 +668,7 @@ namespace cmmr {
       arma::vec ri = get_Resid(i);
       arma::mat Ti = get_T(i);
 
-      arma::vec Tr = Ti_bar * Ti * ri;
+      arma::vec Tr = Ti * ri;
       if (i == 0) mcd_TResid_.subvec(0, n_atts_ * m_(0) - 1) = Tr;
       else{
         int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
@@ -666,7 +694,7 @@ namespace cmmr {
     }
   }
 
-  arma::vec mcbd::mcd_get_TResid(const arma::uword i) {
+  arma::vec mcbd::mcd_get_TResid(const arma::uword i) const {
     if (i == 0) return mcd_TResid_.subvec(0, n_atts_ * m_(0) - 1);
     else {
       int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
@@ -674,7 +702,7 @@ namespace cmmr {
     }
   }
 
-  arma::vec mcbd::mcd_get_TTResid(const arma::uword i) {
+  arma::vec mcbd::mcd_get_TTResid(const arma::uword i) const {
     if (i == 0) return mcd_TTResid_.subvec(0, n_atts_ * m_(0) - 1);
     else {
       int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
@@ -682,6 +710,38 @@ namespace cmmr {
     }
   }
 
+  arma::mat mcbd::mcd_get_G(const arma::uword i) const {
+    int debug = 1;
+
+    if (debug) std::cout << "mcbd::mcd_get_G(): before for loop" << std::endl;
+    arma::uword llmd = poly_(3) * n_atts_;
+    arma::mat result = arma::zeros<arma::mat>(n_atts_ * m_(i), llmd);
+    
+    for (arma::uword t = 0, index = 0; t != m_(i); ++t) {
+      arma::vec epsi = mcd_get_TResid(i);
+      for (arma::uword j = 0, idx = 0; j != n_atts_; ++j) {
+	if (debug) std::cout << "t = " << t << " j = " << j << ": " << std::endl;
+	arma::vec gitj = arma::zeros<arma::vec>(llmd);
+	if (j == 0) { ++index; continue; }
+	
+	arma::vec vit = get_V(i, t).t();
+	arma::mat Vitj_t = arma::zeros<arma::mat>(j, llmd);
+	for (arma::uword k = 0; k <= (j-1); ++k, ++idx) {
+	  arma::vec av = arma::zeros<arma::vec>(llmd);
+	  av.subvec(idx * poly_(3), idx * poly_(3) + poly_(3) - 1) = vit;
+	  Vitj_t.row(k) = av;
+	}
+	gitj = Vitj_t.t() * epsi.subvec(0, j-1);
+	
+	result.row(index++) = gitj.t();
+      }
+    }
+
+    if (debug) std::cout << "mcbd::mcd_get_G(): after for loop" << std::endl;
+
+    return result;
+  }
+  
   arma::mat mcbd::mcd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const {
     const arma::uword llmd = poly_(3) * n_atts_;
     arma::mat result = arma::zeros<arma::mat>(n_atts_ * llmd, n_atts_);
