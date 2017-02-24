@@ -174,7 +174,7 @@ namespace cmmr {
 
     return V_.row(rindex).t();
   }
-  
+
   arma::vec mcbd::get_W(const arma::uword i, const arma::uword t) const {
     arma::uword rindex = 0;
     if (i != 0) rindex = arma::sum(m_.rows(0, i-1));
@@ -574,11 +574,17 @@ namespace cmmr {
       grad_gma += Ci.t() * Di_inv * (ei - Ci * gma_);
 
       if (debug) std::cout << "mcbd::Grad2(): Calculate grad_psi" << std::endl;
-      if (debug) std::cout << "mcbd::Grad2(): Getting G" << std::endl;	    
+      if (debug) std::cout << "mcbd::Grad2(): Getting G" << std::endl;
       arma::mat Gi = mcd_get_G(i);
-      if (debug) std::cout << "mcbd::Grad2(): Getting Di_bar_inv" << std::endl;	    
+      if (debug) std::cout << "mcbd::Grad2(): Getting Di_bar_inv" << std::endl;
       arma::mat Di_bar_inv = get_D_bar_inv(i);
       arma::mat epsi = mcd_get_TResid(i);
+
+      if (debug) std::cout << "mcbd::Grad2(): size(Gi) = " << arma::size(Gi) << std::endl;
+      if (debug) std::cout << "mcbd::Grad2(): size(Di_bar_inv) = " << arma::size(Di_bar_inv) << std::endl;
+      if (debug) std::cout << "mcbd::Grad2(): size(epsi) = " << arma::size(epsi) << std::endl;
+      if (debug) std::cout << "mcbd::Grad2(): size(Psi_) = " << arma::size(Psi_) << std::endl;
+
       grad_psi -= Gi.t() * Di_bar_inv * (epsi + Gi * Psi_);
 
       if (debug) std::cout << "mcbd::Grad2(): Calculate grad_lmd" << std::endl;
@@ -711,29 +717,32 @@ namespace cmmr {
   }
 
   arma::mat mcbd::mcd_get_G(const arma::uword i) const {
-    int debug = 1;
+    int debug = 0;
 
     if (debug) std::cout << "mcbd::mcd_get_G(): before for loop" << std::endl;
     arma::uword llmd = poly_(3) * n_atts_;
     arma::mat result = arma::zeros<arma::mat>(n_atts_ * m_(i), llmd);
-    
+
     for (arma::uword t = 0, index = 0; t != m_(i); ++t) {
       arma::vec epsi = mcd_get_TResid(i);
       for (arma::uword j = 0, idx = 0; j != n_atts_; ++j) {
-	if (debug) std::cout << "t = " << t << " j = " << j << ": " << std::endl;
-	arma::vec gitj = arma::zeros<arma::vec>(llmd);
-	if (j == 0) { ++index; continue; }
-	
-	arma::vec vit = get_V(i, t).t();
-	arma::mat Vitj_t = arma::zeros<arma::mat>(j, llmd);
-	for (arma::uword k = 0; k <= (j-1); ++k, ++idx) {
-	  arma::vec av = arma::zeros<arma::vec>(llmd);
-	  av.subvec(idx * poly_(3), idx * poly_(3) + poly_(3) - 1) = vit;
-	  Vitj_t.row(k) = av;
-	}
-	gitj = Vitj_t.t() * epsi.subvec(0, j-1);
-	
-	result.row(index++) = gitj.t();
+        if (debug) std::cout << "t = " << t << " j = " << j << ": " << std::endl;
+        arma::vec gitj = arma::zeros<arma::vec>(llmd);
+        if (j == 0) { ++index; continue; }
+
+        if (debug) std::cout << "Generate Vitj_t" << std::endl;
+        arma::vec vit = get_V(i, t);
+        arma::mat Vitj_t = arma::zeros<arma::mat>(j, llmd);
+        for (arma::uword k = 0; k <= (j-1); ++k, ++idx) {
+          arma::vec av = arma::zeros<arma::vec>(llmd);
+          av.subvec(idx * poly_(3), idx * poly_(3) + poly_(3) - 1) = vit;
+          Vitj_t.row(k) = av.t();
+        }
+        if (debug) std::cout << "Generate Vitj_t...done" << std::endl;
+
+        gitj = Vitj_t.t() * epsi.subvec(0, j-1);
+
+        result.row(index++) = gitj.t();
       }
     }
 
