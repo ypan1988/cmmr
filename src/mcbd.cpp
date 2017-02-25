@@ -583,9 +583,9 @@ namespace cmmr {
       if (debug) std::cout << "mcbd::Grad2(): size(Gi) = " << arma::size(Gi) << std::endl;
       if (debug) std::cout << "mcbd::Grad2(): size(Di_bar_inv) = " << arma::size(Di_bar_inv) << std::endl;
       if (debug) std::cout << "mcbd::Grad2(): size(epsi) = " << arma::size(epsi) << std::endl;
-      if (debug) std::cout << "mcbd::Grad2(): size(Psi_) = " << arma::size(Psi_) << std::endl;
+      if (debug) std::cout << "mcbd::Grad2(): size(psi_) = " << arma::size(psi_) << std::endl;
 
-      grad_psi -= Gi.t() * Di_bar_inv * (epsi + Gi * Psi_);
+      grad_psi -= Gi.t() * Di_bar_inv * (epsi + Gi * psi_);
 
       if (debug) std::cout << "mcbd::Grad2(): Calculate grad_lmd" << std::endl;
       arma::mat one_T = arma::ones<arma::vec>(m_(i));
@@ -720,22 +720,22 @@ namespace cmmr {
     int debug = 0;
 
     if (debug) std::cout << "mcbd::mcd_get_G(): before for loop" << std::endl;
-    arma::uword llmd = poly_(3) * n_atts_;
-    arma::mat result = arma::zeros<arma::mat>(n_atts_ * m_(i), llmd);
+    arma::uword  lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
+    arma::mat result = arma::zeros<arma::mat>(n_atts_ * m_(i), lpsi);
 
     for (arma::uword t = 0, index = 0; t != m_(i); ++t) {
       arma::vec epsi = mcd_get_TResid(i);
       for (arma::uword j = 0, idx = 0; j != n_atts_; ++j) {
         if (debug) std::cout << "t = " << t << " j = " << j << ": " << std::endl;
-        arma::vec gitj = arma::zeros<arma::vec>(llmd);
+        arma::vec gitj = arma::zeros<arma::vec>(lpsi);
         if (j == 0) { ++index; continue; }
 
         if (debug) std::cout << "Generate Vitj_t" << std::endl;
         arma::vec vit = get_V(i, t);
-        arma::mat Vitj_t = arma::zeros<arma::mat>(j, llmd);
+        arma::mat Vitj_t = arma::zeros<arma::mat>(j, lpsi);
         for (arma::uword k = 0; k <= (j-1); ++k, ++idx) {
-          arma::vec av = arma::zeros<arma::vec>(llmd);
-          av.subvec(idx * poly_(3), idx * poly_(3) + poly_(3) - 1) = vit;
+          arma::vec av = arma::zeros<arma::vec>(lpsi);
+          av.subvec(idx * poly_(2), idx * poly_(2) + poly_(2) - 1) = vit;
           Vitj_t.row(k) = av.t();
         }
         if (debug) std::cout << "Generate Vitj_t...done" << std::endl;
