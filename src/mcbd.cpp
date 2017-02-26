@@ -53,13 +53,11 @@ namespace cmmr {
     if (debug) U_.rows(0, 9).print("U = ");
   }
 
-  arma::uword mcbd::get_m(const arma::uword i) const {
-    return m_(i);
-  }
+  arma::uword mcbd::get_m(const arma::uword i) const { return m_(i); }
 
   arma::vec mcbd::get_Y(const arma::uword i) const {
     arma::mat Yi;
-    if (i == 0) Yi = Y_.rows(0, n_atts_ * m_(0)-1);
+    if (i == 0) Yi = Y_.rows(0, n_atts_ * m_(0) - 1);
     else {
       int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
       Yi = Y_.rows(index, index + n_atts_ * m_(i) -1);
@@ -70,10 +68,10 @@ namespace cmmr {
 
   arma::mat mcbd::get_X(const arma::uword i) const {
     arma::mat Xi;
-    if (i==0) Xi = X_.rows(0, n_atts_ * m_(0)-1);
+    if (i == 0) Xi = X_.rows(0, n_atts_ * m_(0) - 1);
     else {
       int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
-      Xi = X_.rows(index, index + n_atts_ * m_(i) -1);
+      Xi = X_.rows(index, index + n_atts_ * m_(i) - 1);
     }
 
     return Xi;
@@ -102,10 +100,10 @@ namespace cmmr {
 
   arma::mat mcbd::get_V(const arma::uword i) const {
     arma::mat Vi;
-    if (i==0) Vi = V_.rows(0, m_(0)-1);
+    if (i == 0) Vi = V_.rows(0, m_(0) - 1);
     else {
       int index = arma::sum(m_.subvec(0, i - 1));
-      Vi = V_.rows(index, index + m_(i) -1);
+      Vi = V_.rows(index, index + m_(i) - 1);
     }
 
     return Vi;
@@ -113,10 +111,10 @@ namespace cmmr {
 
   arma::mat mcbd::get_W(const arma::uword i) const {
     arma::mat Wi;
-    if (i==0) Wi = W_.rows(0, m_(0)-1);
+    if (i == 0) Wi = W_.rows(0, m_(0) - 1);
     else {
       int index = arma::sum(m_.subvec(0, i - 1));
-      Wi = W_.rows(index, index + m_(i) -1);
+      Wi = W_.rows(index, index + m_(i) - 1);
     }
 
     return Wi;
@@ -169,7 +167,7 @@ namespace cmmr {
 
   arma::vec mcbd::get_V(const arma::uword i, const arma::uword t) const {
     arma::uword rindex = 0;
-    if (i != 0) rindex = arma::sum(m_.rows(0, i-1));
+    if (i != 0) rindex = arma::sum(m_.rows(0, i - 1));
     rindex += t;
 
     return V_.row(rindex).t();
@@ -177,7 +175,7 @@ namespace cmmr {
 
   arma::vec mcbd::get_W(const arma::uword i, const arma::uword t) const {
     arma::uword rindex = 0;
-    if (i != 0) rindex = arma::sum(m_.rows(0, i-1));
+    if (i != 0) rindex = arma::sum(m_.rows(0, i - 1));
     rindex += t;
 
     return W_.row(rindex).t();
@@ -185,12 +183,12 @@ namespace cmmr {
 
   arma::vec mcbd::get_Resid(const arma::uword i, const arma::uword t) const {
     arma::uword rindex = 0;
-    if (i != 0) rindex = n_atts_ * arma::sum(m_.rows(0, i-1));
+    if (i != 0) rindex = n_atts_ * arma::sum(m_.rows(0, i - 1));
     rindex += n_atts_ * t;
 
     return Resid_.rows(rindex, rindex + n_atts_ - 1);
   }
-  
+
   void mcbd::set_theta(const arma::vec &x) {
     int fp2 = free_param_;
     free_param_ = 0;
@@ -214,14 +212,14 @@ namespace cmmr {
 
   void mcbd::set_psi(const arma::vec &x) {
     int fp2 = free_param_;
-    free_param_ = 3;
+    free_param_ = 2;
     UpdateMcbd(x);
     free_param_ = fp2;
   }
 
   void mcbd::set_lambda(const arma::vec &x) {
     int fp2 = free_param_;
-    free_param_ = 4;
+    free_param_ = 2;
     UpdateMcbd(x);
     free_param_ = fp2;
   }
@@ -258,7 +256,7 @@ namespace cmmr {
         arma::uword rindex = t * n_atts_;
         arma::uword cindex = k * n_atts_;
 
-        Ti(rindex, cindex, arma::size(Phi_itk)) = Phi_itk;
+        Ti(rindex, cindex, arma::size(Phi_itk)) = -Phi_itk;
       }
     }
 
@@ -294,7 +292,6 @@ namespace cmmr {
     }
 
     return Ti_bar;
-
   }
 
   arma::mat mcbd::get_D_bar(const arma::uword i, const arma::uword t) const {
@@ -302,7 +299,7 @@ namespace cmmr {
     arma::uword index = 0;
     if (i != 0) index = arma::sum(m_.rows(0, i-1));
 
-    arma::vec Di_bar_elem = -arma::trans(WLmd_.row(index + t));
+    arma::vec Di_bar_elem = arma::trans(WLmd_.row(index + t));
 
     arma::mat Di_bar = arma::eye(n_atts_, n_atts_);
     Di_bar.diag() = Di_bar_elem;
@@ -327,7 +324,7 @@ namespace cmmr {
 
     return Di_bar_inv;
   }
-  
+
   arma::mat mcbd::get_D_inv(const arma::uword i, const arma::uword t) const {
     int debug = 0;
 
@@ -415,9 +412,9 @@ namespace cmmr {
 
     case 2:
       tht_.rows (lbta, lbta + lgma + lpsi + llmd - 1) = x;
-      gma_ = x;
-      psi_ = x;
-      lmd_ = x;
+      gma_ = x.rows ( 0,           lgma - 1 );
+      psi_ = x.rows ( lgma,        lgma + lpsi - 1 );
+      lmd_ = x.rows ( lgma + lpsi, lgma + lpsi + llmd - 1 );
 
       Gma_ = arma::reshape(arma::mat(gma_), U_.n_cols, n_atts_);
       Psi_ = arma::reshape(arma::mat(psi_), V_.n_cols, (n_atts_ * (n_atts_-1) / 2));
@@ -524,8 +521,8 @@ namespace cmmr {
     }
 
     return grad;
-  } 
-  
+  }
+
   void mcbd::Gradient(const arma::vec &x, arma::vec &grad) {
     int debug = 0;
 
@@ -629,6 +626,7 @@ namespace cmmr {
       }
     }
     if (debug) std::cout << "mcbd::Grad2(): after for loop" << std::endl;
+    // grad_gma.t().print("grad_gma = ");
 
     grad2 = -2 * dragonwell::join_vecs({grad_gma, grad_psi, grad_lmd});
   }
