@@ -135,6 +135,7 @@ namespace cmmr
     arma::mat get_Sigma_inv(const arma::uword i) const;
 
     double operator() (const arma::vec &x);
+    arma::vec CalcDeriv(const arma::vec &x);
     void Gradient(const arma::vec &x, arma::vec &grad);
     void Grad1(arma::vec &grad1);
     void Grad2(arma::vec &grad2);

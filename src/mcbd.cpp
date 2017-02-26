@@ -498,6 +498,26 @@ namespace cmmr {
     return result;
   }
 
+  arma::vec mcbd::CalcDeriv(const arma::vec &x) {
+    const double kEps = 1.0e-8;
+    arma::uword n = x.n_rows;
+    arma::vec xh = x;
+    double fold = operator()(x);
+    arma::vec grad = arma::zeros<arma::vec>(n);
+    for (arma::uword idx = 0; idx != n; ++idx) {
+      double tmp = x(idx);
+      double h = kEps * std::abs(tmp);
+      if (h == 0.0) h = kEps;
+      xh(idx) = tmp + h;
+      h = xh(idx) - tmp;
+      double fh = operator()(xh);
+      xh(idx) = tmp;
+      grad(idx) = (fh - fold) / h;
+    }
+
+    return grad;
+  } 
+  
   void mcbd::Gradient(const arma::vec &x, arma::vec &grad) {
     int debug = 0;
 
@@ -546,10 +566,11 @@ namespace cmmr {
 
       grad1 += Xi.t() * Sigmai_inv * ( Yi - Xi * bta_ );
     }
+    grad1 *= -2;
   }
 
   void mcbd::Grad2(arma::vec &grad2) {
-    int debug = 1;
+    int debug = 0;
 
     arma::uword lgma, lpsi, llmd;
     lgma = (n_atts_ * poly_(1)) * n_atts_;

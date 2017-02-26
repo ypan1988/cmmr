@@ -17,10 +17,12 @@ mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::mat V
   double result = mcbd_obj(start);
   if (debug) std::cout << "result: " << result << std::endl;
 
+  mcbd_obj.CalcDeriv(start).t().print("grad = ");
+  
   arma::vec grad;
   mcbd_obj.Gradient(start, grad);
-
-  grad.print("grad = ");
+  
+  grad.t().print("grad = ");
   
 }
 
