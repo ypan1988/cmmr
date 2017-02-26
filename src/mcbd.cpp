@@ -183,6 +183,14 @@ namespace cmmr {
     return W_.row(rindex).t();
   }
 
+  arma::vec mcbd::get_Resid(const arma::uword i, const arma::uword t) const {
+    arma::uword rindex = 0;
+    if (i != 0) rindex = n_atts_ * arma::sum(m_.rows(0, i-1));
+    rindex += n_atts_ * t;
+
+    return Resid_.rows(rindex, rindex + n_atts_ - 1);
+  }
+  
   void mcbd::set_theta(const arma::vec &x) {
     int fp2 = free_param_;
     free_param_ = 0;
@@ -590,7 +598,7 @@ namespace cmmr {
       if (debug) std::cout << "mcbd::Grad2(): Calculate grad_gma" << std::endl;
       arma::mat Ci = get_C(i);
       arma::mat Di_inv = get_D_inv(i);
-      arma::mat ei = get_e(i);
+      arma::mat ei = get_Resid(i);
 
       grad_gma += Ci.t() * Di_inv * (ei - Ci * gma_);
 
@@ -635,9 +643,10 @@ namespace cmmr {
     if (t == 0) return Cit;
     else {
       // arma::mat Tit_bar = get_T_bar(i, t);
-      arma::mat eye_J   = arma::eye(n_atts_, n_atts_);
+      // arma::mat eye_J   = arma::eye(n_atts_, n_atts_);
       for (arma::uword k = 0; k != t; ++k) {
-        arma::vec eik  = get_e(i, k);
+	arma::vec eik = get_Resid(i, k);
+        //arma::vec eik  = get_e(i, k);// WRONG!
 
         if (debug) std::cout << "mcbd::get_C(i, t): size(eik) = " << arma::size(eik) << std::endl;
         if (debug) std::cout << "mcbd::get_C(i, t): size(Uitk) = " << arma::size(get_U(i, t, k)) << std::endl;

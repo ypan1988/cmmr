@@ -13,7 +13,7 @@ mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::mat V
   if(cov_method == "mcd") cov_obj.setid(1);
 
   cmmr::mcbd mcbd_obj(m, Y, X, U, V, W, cov_obj);
-
+  
   double result = mcbd_obj(start);
   if (debug) std::cout << "result: " << result << std::endl;
 

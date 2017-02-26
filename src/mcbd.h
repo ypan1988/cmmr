@@ -107,6 +107,7 @@ namespace cmmr
     arma::mat get_U(const arma::uword i, const arma::uword t, const arma::uword k) const;
     arma::vec get_V(const arma::uword i, const arma::uword t) const;
     arma::vec get_W(const arma::uword i, const arma::uword t) const;
+    arma::vec get_Resid(const arma::uword i, const arma::uword t) const;
 
     arma::vec get_theta() const { return tht_; }
     arma::vec get_beta() const { return bta_; }
@@ -162,19 +163,6 @@ namespace cmmr
     arma::vec mcd_get_TTResid(const arma::uword i) const;
     arma::mat mcd_get_G(const arma::uword i) const;
     arma::mat mcd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const;
-
-    /* void gma_vec2mat() { */
-    /*   int q = poly_ ( 3 ); */
-    /*   for ( int i = 1; i <= n_atts_; ++i ) { */
-    /*     int vindex = ( i - 1 ) * n_atts_; */
-    /*     int mindex = ( i - 1 ) * q; */
-    /*     arma::vec gma_i = gma_.rows ( vindex, vindex + n_atts_ * q - 1 ); */
-    /*     arma::mat MatGma_i = arma::reshape ( arma::mat ( gma_i ), q, n_atts_ ); */
-    /*     MatGma_.rows ( mindex, mindex + q - 1 ) = MatGma_i; */
-    /*     // MatGma_.print ( "GAMMA = " ); */
-
-    /*   } */
-    /* } */
 
     /**
      * Update matrix D (also calculate log_det_Sigma)
