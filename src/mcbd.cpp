@@ -299,7 +299,7 @@ namespace cmmr {
     arma::uword index = 0;
     if (i != 0) index = arma::sum(m_.rows(0, i-1));
 
-    arma::vec Di_bar_elem = arma::trans(WLmd_.row(index + t));
+    arma::vec Di_bar_elem = arma::trans(arma::exp(WLmd_.row(index + t)));
 
     arma::mat Di_bar = arma::eye(n_atts_, n_atts_);
     Di_bar.diag() = Di_bar_elem;
@@ -576,6 +576,7 @@ namespace cmmr {
 
   void mcbd::Grad2(arma::vec &grad2) {
     int debug = 0;
+    int debug2 = 0;
 
     arma::uword lgma, lpsi, llmd;
     lgma = (n_atts_ * poly_(1)) * n_atts_;
@@ -602,6 +603,8 @@ namespace cmmr {
       if (debug) std::cout << "mcbd::Grad2(): Calculate grad_psi" << std::endl;
       if (debug) std::cout << "mcbd::Grad2(): Getting G" << std::endl;
       arma::mat Gi = mcd_get_G(i);
+      if (i == 0 && debug2) std::cout << "mcbd::Grad2(): iter " << i << ": " << std::endl;
+      if (i == 0 && debug2) Gi.print("Gi = ");
       if (debug) std::cout << "mcbd::Grad2(): Getting Di_bar_inv" << std::endl;
       arma::mat Di_bar_inv = get_D_bar_inv(i);
       arma::mat epsi = mcd_get_TResid(i);
@@ -611,7 +614,7 @@ namespace cmmr {
       if (debug) std::cout << "mcbd::Grad2(): size(epsi) = " << arma::size(epsi) << std::endl;
       if (debug) std::cout << "mcbd::Grad2(): size(psi_) = " << arma::size(psi_) << std::endl;
 
-      grad_psi -= Gi.t() * Di_bar_inv * (epsi + Gi * psi_);
+      grad_psi += -Gi.t() * Di_bar_inv * (Gi * psi_ - epsi);
 
       if (debug) std::cout << "mcbd::Grad2(): Calculate grad_lmd" << std::endl;
       arma::mat one_T = arma::ones<arma::vec>(m_(i));
