@@ -275,7 +275,7 @@ namespace cmmr {
     if (i != 0) index = arma::sum(m_.rows(0, i-1));
 
     if (debug) std::cout << "mcbd::get_T_bar(): index = " << index << std::endl;
-    arma::vec Ti_bar_elem = -arma::trans(VPsi_.row(index + t));
+    arma::vec Ti_bar_elem = arma::trans(VPsi_.row(index + t));
 
     arma::mat Ti_bar = arma::eye(n_atts_, n_atts_);
     Ti_bar = dragonwell::ltrimat(n_atts_, Ti_bar_elem);
@@ -614,7 +614,7 @@ namespace cmmr {
       if (debug) std::cout << "mcbd::Grad2(): size(epsi) = " << arma::size(epsi) << std::endl;
       if (debug) std::cout << "mcbd::Grad2(): size(psi_) = " << arma::size(psi_) << std::endl;
 
-      grad_psi += -Gi.t() * Di_bar_inv * (Gi * psi_ - epsi);
+      grad_psi += -Gi.t() * Di_bar_inv * (Gi * psi_ + epsi);
 
       if (debug) std::cout << "mcbd::Grad2(): Calculate grad_lmd" << std::endl;
       arma::mat one_T = arma::ones<arma::vec>(m_(i));
@@ -681,22 +681,22 @@ namespace cmmr {
     return Ci;
   }
 
-  arma::mat mcbd::get_e(const arma::uword i, const arma::uword t) const {
-    arma::mat Ti = get_T(i);
-    arma::mat Yi = get_Y(i);
+  // arma::mat mcbd::get_e(const arma::uword i, const arma::uword t) const {
+  //   arma::mat Ti = get_T(i);
+  //   arma::mat Yi = get_Y(i);
 
-    arma::mat ei = Ti * Yi;
-    arma::uword rindex = n_atts_ * t;
+  //   arma::mat ei = Ti * Yi;
+  //   arma::uword rindex = n_atts_ * t;
 
-    return ei.rows(rindex, rindex + n_atts_ - 1);
-  }
+  //   return ei.rows(rindex, rindex + n_atts_ - 1);
+  // }
 
-  arma::mat mcbd::get_e(const arma::uword i) const {
-    arma::mat Ti = get_T(i);
-    arma::mat Yi = get_Y(i);
+  // arma::mat mcbd::get_e(const arma::uword i) const {
+  //   arma::mat Ti = get_T(i);
+  //   arma::mat Yi = get_Y(i);
 
-    return Ti * Yi;
-  }
+  //   return Ti * Yi;
+  // }
 
   void mcbd::mcd_UpdateTResid() {
     mcd_TResid_ = arma::zeros<arma::vec>(n_atts_ * arma::sum(m_));
