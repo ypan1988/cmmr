@@ -249,7 +249,7 @@ namespace cmmr {
 
   arma::mat mcbd::get_T(const arma::uword i) const {
     arma::mat Ti = arma::eye(n_atts_ * m_(i), n_atts_ * m_(i));
-    for(arma::uword t = 0; t != m_(i); ++t) {
+    for(arma::uword t = 1; t != m_(i); ++t) {
       for(arma::uword k = 0; k != t; ++k) {
         arma::mat Phi_itk = get_T(i, t, k);
 
