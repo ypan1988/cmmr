@@ -166,6 +166,9 @@ namespace cmmr
     void      mcd_UpdateTTResid();
     arma::vec mcd_get_TResid(const arma::uword i) const;
     arma::vec mcd_get_TTResid(const arma::uword i) const;
+
+  public:
+    arma::mat mcd_get_V(const arma::uword i, const arma::uword t, const arma::uword j) const;
     arma::mat mcd_get_G(const arma::uword i) const;
     arma::mat mcd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const;
 

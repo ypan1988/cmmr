@@ -749,37 +749,35 @@ namespace cmmr {
     }
   }
 
-  arma::mat mcbd::mcd_get_G(const arma::uword i) const {
-    int debug = 0;
+  arma::mat mcbd::mcd_get_V(const arma::uword i, const arma::uword t, const arma::uword j) const {
+    arma::uword lpsi = poly_(2) * (n_atts_ * (n_atts_-1) / 2);
+    arma::vec vit = get_V(i, t);
 
-    if (debug) std::cout << "mcbd::mcd_get_G(): before for loop" << std::endl;
+    arma::uword index = 0;
+    if (j != 1) { for (arma::uword cnt = 1; cnt != j; ++cnt) index += cnt; }
+    
+    arma::mat result = arma::zeros<arma::mat>(j, lpsi);
+    for (arma::uword k = 0; k != j; ++k) {
+      result(k, poly_(2)*(index+k), arma::size(vit.t())) = vit.t();
+    }
+    
+    return result.t();
+  }
+  
+  arma::mat mcbd::mcd_get_G(const arma::uword i) const {
     arma::uword  lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
     arma::mat result = arma::zeros<arma::mat>(n_atts_ * m_(i), lpsi);
-
     for (arma::uword t = 0, index = 0; t != m_(i); ++t) {
       arma::vec epsi = mcd_get_TResid(i);
-      for (arma::uword j = 0, idx = 0; j != n_atts_; ++j) {
-        if (debug) std::cout << "t = " << t << " j = " << j << ": " << std::endl;
+      for (arma::uword j = 0; j != n_atts_; ++j) {
+	arma::vec epsit = epsi.subvec(n_atts_ * j, n_atts_ * j + n_atts_ - 1);
         arma::vec gitj = arma::zeros<arma::vec>(lpsi);
         if (j == 0) { ++index; continue; }
-
-        if (debug) std::cout << "Generate Vitj_t" << std::endl;
-        arma::vec vit = get_V(i, t);
-        arma::mat Vitj_t = arma::zeros<arma::mat>(j, lpsi);
-        for (arma::uword k = 0; k <= (j-1); ++k, ++idx) {
-          arma::vec av = arma::zeros<arma::vec>(lpsi);
-          av.subvec(idx * poly_(2), idx * poly_(2) + poly_(2) - 1) = vit;
-          Vitj_t.row(k) = av.t();
-        }
-        if (debug) std::cout << "Generate Vitj_t...done" << std::endl;
-
-        gitj = Vitj_t.t() * epsi.subvec(0, j-1);
-
+	arma::mat Vitj = mcd_get_V(i, t, j);
+        gitj = Vitj * epsit.subvec(0, j - 1);
         result.row(index++) = gitj.t();
       }
     }
-
-    if (debug) std::cout << "mcbd::mcd_get_G(): after for loop" << std::endl;
 
     return result;
   }
