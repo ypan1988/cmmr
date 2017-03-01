@@ -115,6 +115,10 @@ namespace cmmr
     arma::vec get_psi() const { return psi_; }
     arma::vec get_lambda() const { return lmd_; }
 
+    arma::mat get_Gamma() const { return Gma_; }
+    arma::mat get_Psi() const { return Psi_; }
+    arma::mat get_Lambda() const { return Lmd_; }
+
     void set_free_param(const arma::uword n) { free_param_ = n; }
     void set_theta(const arma::vec &x);
     void set_beta(const arma::vec &x);
@@ -129,6 +133,7 @@ namespace cmmr
     arma::mat get_T_bar(const arma::uword i) const;
 
     arma::mat get_D_bar(const arma::uword i, const arma::uword t) const;
+    arma::mat get_D_bar_inv(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_bar_inv(const arma::uword i) const;
     
     arma::mat get_D_inv(const arma::uword i, const arma::uword t) const;

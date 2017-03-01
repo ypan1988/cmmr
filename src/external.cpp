@@ -23,6 +23,8 @@ mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::mat V
   mcbd_obj.Gradient(start, grad);
   
   grad.t().print("grad = ");
-  
+
+  mcbd_obj.get_lambda().print("lambda = ");
+  mcbd_obj.get_Lambda().print("Lambda = ");
 }
 

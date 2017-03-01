@@ -156,7 +156,8 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     bta0 <- NULL
     lmd0 <- NULL
     for (j in 1:J) {
-      lm.obj <- lm(Y[,J] ~ X - 1)
+      cat("dim(Y)", dim(Y), "\n")
+      lm.obj <- lm(Y[,j] ~ X - 1)
       bta0 <- c(bta0, coef(lm.obj))
       
       resid(lm.obj) -> res

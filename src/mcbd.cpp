@@ -49,8 +49,6 @@ namespace cmmr {
     UpdateMcbd(x);
 
     if (debug) std::cout << "mcbd obj created..." << std::endl;
-    if (debug) X_.rows(0, 9).print("X = ");
-    if (debug) U_.rows(0, 9).print("U = ");
   }
 
   arma::uword mcbd::get_m(const arma::uword i) const { return m_(i); }
@@ -142,6 +140,7 @@ namespace cmmr {
     return Residi;
   }
 
+  // t = 1, ... , m_(i); k = 0, ... , t-1
   arma::mat mcbd::get_U(const arma::uword i, const arma::uword t, const arma::uword k) const {
     arma::mat Uitk;
     if (m_(i) != 1) {
@@ -299,22 +298,26 @@ namespace cmmr {
     arma::uword index = 0;
     if (i != 0) index = arma::sum(m_.rows(0, i-1));
 
-    arma::vec Di_bar_elem = arma::trans(arma::exp(WLmd_.row(index + t)));
+    arma::vec Dit_bar_elem = arma::trans(arma::exp(WLmd_.row(index + t)));
 
-    arma::mat Di_bar = arma::eye(n_atts_, n_atts_);
-    Di_bar.diag() = Di_bar_elem;
+    arma::mat Dit_bar = arma::eye(n_atts_, n_atts_);
+    Dit_bar.diag() = Dit_bar_elem;
 
-    return Di_bar;
+    return Dit_bar;
   }
 
+  arma::mat mcbd::get_D_bar_inv(const arma::uword i, const arma::uword t) const {
+    arma::mat Dit_bar = get_D_bar(i, t);
+    return arma::diagmat(arma::pow(Dit_bar.diag(), -1));
+  }
+  
   arma::mat mcbd::get_D_bar_inv(const arma::uword i) const {
     int debug = 0;
 
     arma::mat Di_bar_inv = arma::zeros<arma::mat>(n_atts_ * m_(i), n_atts_ * m_(i));
 
     for(arma::uword t = 0; t != m_(i); ++t) {
-      arma::mat Dit_bar = get_D_bar(i, t);
-      arma::mat Dit_bar_inv = arma::diagmat(arma::pow(Dit_bar.diag(), -1));
+      arma::mat Dit_bar_inv = get_D_bar_inv(i, t);
 
       arma::uword rindex = t * n_atts_;
       arma::uword cindex = t * n_atts_;
@@ -331,13 +334,12 @@ namespace cmmr {
     if (debug) std::cout << "mcbd::get_D_inv(i,t): getting Tit_bar" << std::endl;
     arma::mat Tit_bar = get_T_bar(i, t);
     if (debug) std::cout << "mcbd::get_D_inv(i,t): getting Dit_bar" << std::endl;
-    arma::mat Dit_bar = get_D_bar(i, t);
-    arma::mat Dit_bar_inv = arma::diagmat(arma::pow(Dit_bar.diag(), -1));
+    arma::mat Dit_bar_inv = get_D_bar_inv(i, t);
     arma::mat Dit_inv = Tit_bar.t() * Dit_bar_inv * Tit_bar;
 
     return Dit_inv;
   }
-
+  
   arma::mat mcbd::get_D_inv(const arma::uword i) const {
     int debug = 0;
 
@@ -625,7 +627,7 @@ namespace cmmr {
       for (arma::uword t = 0; t != m_(i); ++t) {
         arma::uword index = n_atts_ * t;
         grad_lmd += -0.5 * arma::kron(one_J.t(), eye_Jr) * mcd_CalcDbarDeriv(i,t)
-          * TTr.subvec(index, index + n_atts_ - 1);
+          * arma::pow(TTr.subvec(index, index + n_atts_ - 1), 2);
       }
     }
     if (debug) std::cout << "mcbd::Grad2(): after for loop" << std::endl;
