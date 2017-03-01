@@ -648,7 +648,7 @@ namespace cmmr {
       // arma::mat Tit_bar = get_T_bar(i, t);
       // arma::mat eye_J   = arma::eye(n_atts_, n_atts_);
       for (arma::uword k = 0; k != t; ++k) {
-	arma::vec eik = get_Resid(i, k);
+        arma::vec eik = get_Resid(i, k);
         //arma::vec eik  = get_e(i, k);// WRONG!
 
         if (debug) std::cout << "mcbd::get_C(i, t): size(eik) = " << arma::size(eik) << std::endl;
@@ -755,25 +755,25 @@ namespace cmmr {
 
     arma::uword index = 0;
     if (j != 1) { for (arma::uword cnt = 1; cnt != j; ++cnt) index += cnt; }
-    
+
     arma::mat result = arma::zeros<arma::mat>(j, lpsi);
     for (arma::uword k = 0; k != j; ++k) {
       result(k, poly_(2)*(index+k), arma::size(vit.t())) = vit.t();
     }
-    
+
     return result.t();
   }
-  
+
   arma::mat mcbd::mcd_get_G(const arma::uword i) const {
     arma::uword  lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
     arma::mat result = arma::zeros<arma::mat>(n_atts_ * m_(i), lpsi);
     for (arma::uword t = 0, index = 0; t != m_(i); ++t) {
       arma::vec epsi = mcd_get_TResid(i);
+      arma::vec epsit = epsi.subvec(n_atts_ * t, n_atts_ * t + n_atts_ - 1);
       for (arma::uword j = 0; j != n_atts_; ++j) {
-	arma::vec epsit = epsi.subvec(n_atts_ * j, n_atts_ * j + n_atts_ - 1);
         arma::vec gitj = arma::zeros<arma::vec>(lpsi);
         if (j == 0) { ++index; continue; }
-	arma::mat Vitj = mcd_get_V(i, t, j);
+        arma::mat Vitj = mcd_get_V(i, t, j);
         gitj = Vitj * epsit.subvec(0, j - 1);
         result.row(index++) = gitj.t();
       }
@@ -781,7 +781,7 @@ namespace cmmr {
 
     return result;
   }
-  
+
   arma::mat mcbd::mcd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const {
     const arma::uword llmd = poly_(3) * n_atts_;
     arma::mat result = arma::zeros<arma::mat>(n_atts_ * llmd, n_atts_);
