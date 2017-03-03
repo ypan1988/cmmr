@@ -122,9 +122,10 @@ namespace cmmr
     void set_free_param(const arma::uword n) { free_param_ = n; }
     void set_theta(const arma::vec &x);
     void set_beta(const arma::vec &x);
-    void set_gamma(const arma::vec &x);
-    void set_psi(const arma::vec &x);
-    void set_lambda(const arma::vec &x);
+    void set_theta2(const arma::vec &x);
+    /* void set_gamma(const arma::vec &x); */
+    /* void set_psi(const arma::vec &x); */
+    /* void set_lambda(const arma::vec &x); */
 
     arma::mat get_T(const arma::uword i, const arma::uword t, const arma::uword k) const;
     arma::mat get_T(const arma::uword i) const;
@@ -152,7 +153,10 @@ namespace cmmr
 
     void UpdateBeta();
     //void UpdateGamma();
-
+    void UpdateTheta2(const arma::vec &x);
+    
+    void Optimize(const arma::vec &start);
+      
   private:
     arma::mat get_C(const arma::uword i, const arma::uword t) const;
     arma::mat get_C(const arma::uword i) const;

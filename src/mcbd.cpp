@@ -202,26 +202,33 @@ namespace cmmr {
     free_param_ = fp2;
   }
 
-  void mcbd::set_gamma(const arma::vec &x) {
+  void mcbd::set_theta2(const arma::vec &x) {
     int fp2 = free_param_;
     free_param_ = 2;
     UpdateMcbd(x);
     free_param_ = fp2;
   }
+  
+  // void mcbd::set_gamma(const arma::vec &x) {
+  //   int fp2 = free_param_;
+  //   free_param_ = 2;
+  //   UpdateMcbd(x);
+  //   free_param_ = fp2;
+  // }
 
-  void mcbd::set_psi(const arma::vec &x) {
-    int fp2 = free_param_;
-    free_param_ = 2;
-    UpdateMcbd(x);
-    free_param_ = fp2;
-  }
+  // void mcbd::set_psi(const arma::vec &x) {
+  //   int fp2 = free_param_;
+  //   free_param_ = 2;
+  //   UpdateMcbd(x);
+  //   free_param_ = fp2;
+  // }
 
-  void mcbd::set_lambda(const arma::vec &x) {
-    int fp2 = free_param_;
-    free_param_ = 2;
-    UpdateMcbd(x);
-    free_param_ = fp2;
-  }
+  // void mcbd::set_lambda(const arma::vec &x) {
+  //   int fp2 = free_param_;
+  //   free_param_ = 2;
+  //   UpdateMcbd(x);
+  //   free_param_ = fp2;
+  // }
 
   arma::mat mcbd::get_T(const arma::uword i, const arma::uword t, const arma::uword k ) const {
     //int debug = 0;
@@ -477,6 +484,9 @@ namespace cmmr {
     set_beta(beta);
   }
 
+  void mcbd::UpdateTheta2(const arma::vec &x) {
+  }
+
   double mcbd::operator()(const arma::vec &x) {
     int debug = 0;
 
@@ -636,6 +646,9 @@ namespace cmmr {
     grad2 = -2 * dragonwell::join_vecs({grad_gma, grad_psi, grad_lmd});
   }
 
+  void mcbd::Optimize(const arma::vec &start) {    
+  }
+  
   arma::mat mcbd::get_C(const arma::uword i, const arma::uword t) const {
     int debug = 0;
 
