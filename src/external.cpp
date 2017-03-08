@@ -29,6 +29,8 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
   
   mcbd_mode cov_obj(0);
   if(cov_method == "mcd") cov_obj.setid(1);
+  if(cov_method == "acd") cov_obj.setid(2);
+  if(cov_method == "hpc") cov_obj.setid(3);
 
   cmmr::mcbd mcbd_obj(m, Y, X, U, V, W, cov_obj);
 
