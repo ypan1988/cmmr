@@ -152,20 +152,17 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
 
   if (!missStart && (lbta+lgma+lpsi+llmd) != length(start)) 
     Stop("Incorrect start input")
-  
+
   if (missStart) {
-    
     bta0 <- NULL
     lmd0 <- NULL
     for (j in 1:J) {
       cat("dim(Y)", dim(Y), "\n")
       lm.obj <- lm(Y[,j] ~ X - 1)
       bta0 <- c(bta0, coef(lm.obj))
-      
       resid(lm.obj) -> res
       lmd0 <- c(lmd0, coef(lm(log(res^2) ~ W - 1)))
     }
-    
     gma0 <- rep(0, lgma)
     psi0 <- rep(0, lpsi)
 
@@ -173,13 +170,10 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     if (debug) cat("gma0[", length(gma0),"]: ", gma0, "\n")
     if (debug) cat("psi0[", length(psi0),"]: ", psi0, "\n")
     if (debug) cat("lmd0[", length(lmd0),"]: ", lmd0, "\n")
-    
     start <- c(bta0, gma0, psi0, lmd0)
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
   }
-    
   est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
-  
   est
 }
 

@@ -338,15 +338,13 @@ namespace cmmr {
   arma::mat mcbd::get_D_inv(const arma::uword i, const arma::uword t) const {
     int debug = 0;
 
-    if (debug) std::cout << "mcbd::get_D_inv(i,t): getting Tit_bar" << std::endl;
     arma::mat Tit_bar = get_T_bar(i, t);
-    if (debug) std::cout << "mcbd::get_D_inv(i,t): getting Dit_bar" << std::endl;
     arma::mat Dit_bar_inv = get_D_bar_inv(i, t);
     arma::mat Dit_inv = Tit_bar.t() * Dit_bar_inv * Tit_bar;
 
     return Dit_inv;
   }
-  
+
   arma::mat mcbd::get_D_inv(const arma::uword i) const {
     int debug = 0;
 
@@ -379,7 +377,7 @@ namespace cmmr {
     if (debug)
       std::cout << "mcbd::get_Sigma_inv(): "
                 << "getting Di_inv..." << std::endl;
- 
+
     arma::mat Di_inv = get_D_inv(i);
 
     arma::mat Sigmai_inv = Ti.t() * Di_inv * Ti;
@@ -443,23 +441,33 @@ namespace cmmr {
       VPsi_ = V_ * Psi_;
       WLmd_ = W_ * Lmd_;
       Resid_ = Y_ - Xbta_;
-      mcd_UpdateTResid();
-      mcd_UpdateTTResid();
+
+      if (mcbd_mode_obj_ == mcbd_mcd) {
+        mcd_UpdateTResid();
+        mcd_UpdateTTResid();
+      }
       break;
 
     case 1:
       Xbta_ = X_ * bta_;
       Resid_ = Y_ - Xbta_;
-      mcd_UpdateTResid();
-      mcd_UpdateTTResid();
+
+      if (mcbd_mode_obj_ == mcbd_mcd) {
+        mcd_UpdateTResid();
+        mcd_UpdateTTResid();
+      }
       break;
 
     case 2:
       UGma_ = U_ * Gma_;
       VPsi_ = V_ * Psi_;
       WLmd_ = W_ * Lmd_;
-      mcd_UpdateTResid();
-      mcd_UpdateTTResid();
+
+      if (mcbd_mode_obj_ == mcbd_mcd) {
+        mcd_UpdateTResid();
+        mcd_UpdateTTResid();
+      }
+
       break;
 
     default: Rcpp::Rcout << "Wrong value for free_param_" << std::endl;
@@ -506,7 +514,10 @@ namespace cmmr {
 
     arma::vec one_M = arma::ones<arma::vec>(arma::sum(m_));
     arma::vec one_J = arma::ones<arma::vec>(n_atts_);
-    double log_det_Sigma = arma::as_scalar(one_M.t() * WLmd_ * one_J);
+    double log_det_Sigma = 0.0;
+
+    if (mcbd_mode_obj_ == mcbd_mcd || mcbd_mode_obj_ == mcbd_acd)
+      log_det_Sigma = arma::as_scalar(one_M.t() * WLmd_ * one_J);
 
     result += log_det_Sigma;
 

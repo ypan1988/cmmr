@@ -136,7 +136,7 @@ namespace cmmr
     arma::mat get_D_bar(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_bar_inv(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_bar_inv(const arma::uword i) const;
-    
+
     arma::mat get_D_inv(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_inv(const arma::uword i) const;
     arma::mat get_Sigma_inv(const arma::uword i) const;
