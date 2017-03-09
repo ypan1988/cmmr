@@ -1,4 +1,5 @@
 #include <RcppArmadillo.h>
+#include <cmath>
 
 #include "bfgs.h"
 #include "mcbd.h"
@@ -6,7 +7,7 @@
 //'@export
 // [[Rcpp::export]]
 Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::mat V, arma::mat W,
-			   std::string cov_method, arma::vec start, bool trace = false)
+                           std::string cov_method, arma::vec start, bool trace = false)
 {
   int debug = 0;
 
@@ -77,7 +78,7 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
 
     if (trace) {
       Rcpp::Rcout << std::setw(5) << iter << ": " << std::setw(10) << mcbd_obj(x)
-		  << ": ";
+                  << ": ";
       x.t().print();
     }
 
@@ -90,8 +91,8 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
     }
     if (test < kTolX) {
       if (debug)
-	Rcpp::Rcout << "Test for convergence on Delta x: converged."
-		    << std::endl;
+        Rcpp::Rcout << "Test for convergence on Delta x: converged."
+                    << std::endl;
       break;
     }
 
@@ -107,8 +108,8 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
     }
     if (test < grad_tol) {
       if (debug)
-	Rcpp::Rcout << "Test for convergence on zero gradient: converged."
-		    << std::endl;
+        Rcpp::Rcout << "Test for convergence on zero gradient: converged."
+                    << std::endl;
       break;
     }
 
@@ -120,8 +121,8 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
 
     if (trace) {
       Rcpp::Rcout << "--------------------------------------------------"
-		  << "\n Updating the Three Parameters in Covariance Matrix ..."
-		  << std::endl;
+                  << "\n Updating the Three Parameters in Covariance Matrix ..."
+                  << std::endl;
     }
 
     mcbd_obj.set_free_param(2);
@@ -130,7 +131,7 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
 
     if (trace) {
       Rcpp::Rcout << "--------------------------------------------------"
-		  << std::endl;
+                  << std::endl;
     }
 
     mcbd_obj.UpdateTheta2(tht2);
@@ -147,15 +148,64 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
   arma::vec psi = x.rows(lbta + lgma, lbta + lgma + lpsi - 1);
   arma::vec lambda = x.rows( lbta + lgma + lpsi, lbta + lgma + lpsi + llmd - 1);
 
-  double bic = f_min / n_subs + ltht * log(static_cast<double>(n_subs)) / n_subs;
+  arma::uvec npars = {ltht, lbta, lgma, lpsi, llmd};
+
+  double loglik = f_min / (-2.0) + n_atts * arma::sum(m) / (-2.0) * log(2 * arma::datum::pi);
+  double bic = -2 * loglik / n_subs + ltht * log(static_cast<double>(n_subs)) / n_subs;
 
   return Rcpp::List::create( Rcpp::Named("par") = x,
-  			     Rcpp::Named("beta") = beta,
-  			     Rcpp::Named("gamma") = gamma,
-  			     Rcpp::Named("psi") = psi,
-  			     Rcpp::Named("lambda") = lambda,
-  			     Rcpp::Named("loglik") = -f_min / 2,
-  			     Rcpp::Named("BIC") = bic,
-  			     Rcpp::Named("iter") = n_iters );
+                             Rcpp::Named("beta") = beta,
+                             Rcpp::Named("gamma") = gamma,
+                             Rcpp::Named("psi") = psi,
+                             Rcpp::Named("lambda") = lambda,
+                             Rcpp::Named("npars") = npars,
+                             Rcpp::Named("loglik") = loglik,
+                             Rcpp::Named("BIC") = bic,
+                             Rcpp::Named("iter") = n_iters );
+}
+
+//'@export
+// [[Rcpp::export]]
+Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::mat V, arma::mat W,
+                     std::string cov_method, arma::vec start, bool trace = false)
+{
+  int debug = 0;
+
+  arma::uword n_subs = m.n_elem;
+  arma::uword n_atts = Y.n_cols;
+  
+  arma::uvec poly = arma::zeros<arma::uvec>(4);
+  poly(0) = X.n_cols;
+  poly(1) = U.n_cols;
+  poly(2) = V.n_cols;
+  poly(3) = W.n_cols;
+
+  arma::uword ltht, lbta, lgma, lpsi, llmd, ltht2;
+  lbta = (n_atts * poly(0)) * 1;
+  lgma = (n_atts * poly(1)) * n_atts;
+  lpsi = poly(2)            * (n_atts * (n_atts-1) / 2);
+  llmd = poly(3)            * n_atts;
+  ltht = lbta + lgma + lpsi + llmd;
+  ltht2 = lgma + lpsi + llmd;
+  
+  mcbd_mode cov_obj(0);
+  if(cov_method == "mcd") cov_obj.setid(1);
+  if(cov_method == "acd") cov_obj.setid(2);
+  if(cov_method == "hpc") cov_obj.setid(3);
+
+  cmmr::mcbd mcbd_obj(m, Y, X, U, V, W, cov_obj);
+
+  arma::vec grad1;
+  grad1 = mcbd_obj.CalcDeriv(start);
+  grad1.t().print("grad1 = ");
+
+  arma::vec grad2;
+  mcbd_obj.Gradient(start, grad2);
+  grad2.t().print("grad2 = ");
+
+  arma::uvec npars = {ltht, lbta, lgma, lpsi, llmd};
+
+  return Rcpp::List::create( Rcpp::Named("par") = start,
+                             Rcpp::Named("npars") = npars);
 }
 

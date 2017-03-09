@@ -305,7 +305,12 @@ namespace cmmr {
     arma::uword index = 0;
     if (i != 0) index = arma::sum(m_.rows(0, i-1));
 
-    arma::vec Dit_bar_elem = arma::trans(arma::exp(WLmd_.row(index + t)));
+    arma::vec Dit_bar_elem;
+
+    if (mcbd_mode_obj_ == mcbd_mcd)
+      Dit_bar_elem = arma::trans(arma::exp(WLmd_.row(index + t)));
+    else if (mcbd_mode_obj_ == mcbd_acd)
+      Dit_bar_elem = arma::trans(arma::exp(WLmd_.row(index + t) / 2));
 
     arma::mat Dit_bar = arma::eye(n_atts_, n_atts_);
     Dit_bar.diag() = Dit_bar_elem;
@@ -317,7 +322,7 @@ namespace cmmr {
     arma::mat Dit_bar = get_D_bar(i, t);
     return arma::diagmat(arma::pow(Dit_bar.diag(), -1));
   }
-  
+
   arma::mat mcbd::get_D_bar_inv(const arma::uword i) const {
     int debug = 0;
 
@@ -340,7 +345,13 @@ namespace cmmr {
 
     arma::mat Tit_bar = get_T_bar(i, t);
     arma::mat Dit_bar_inv = get_D_bar_inv(i, t);
-    arma::mat Dit_inv = Tit_bar.t() * Dit_bar_inv * Tit_bar;
+    arma::mat Dit_inv;
+
+    if (mcbd_mode_obj_ == mcbd_mcd) { Dit_inv = Tit_bar.t() * Dit_bar_inv * Tit_bar; }
+    else if (mcbd_mode_obj_ == mcbd_acd) {
+      arma::mat Tit_bar_inv = Tit_bar.i();
+      Dit_inv = Dit_bar_inv * Tit_bar_inv.t() * Tit_bar_inv * Dit_bar_inv;
+    }
 
     return Dit_inv;
   }
@@ -623,38 +634,46 @@ namespace cmmr {
 
       grad_gma += Ci.t() * Di_inv * (ei - Ci * gma_);
 
-      if (debug) std::cout << "mcbd::Grad2(): Calculate grad_psi" << std::endl;
-      if (debug) std::cout << "mcbd::Grad2(): Getting G" << std::endl;
-      arma::mat Gi = mcd_get_G(i);
-      if (i == 0 && debug2) std::cout << "mcbd::Grad2(): iter " << i << ": " << std::endl;
-      if (i == 0 && debug2) Gi.print("Gi = ");
-      if (debug) std::cout << "mcbd::Grad2(): Getting Di_bar_inv" << std::endl;
-      arma::mat Di_bar_inv = get_D_bar_inv(i);
-      arma::mat epsi = mcd_get_TResid(i);
+      // Calculate grad_psi and grad_lmd in MCBD-MCD
+      if (mcbd_mode_obj_ == mcbd_mcd) {
+        if (debug) std::cout << "mcbd::Grad2(): Calculate grad_psi" << std::endl;
+        if (debug) std::cout << "mcbd::Grad2(): Getting G" << std::endl;
+        arma::mat Gi = mcd_get_G(i);
+        if (i == 0 && debug2) std::cout << "mcbd::Grad2(): iter " << i << ": " << std::endl;
+        if (i == 0 && debug2) Gi.print("Gi = ");
+        if (debug) std::cout << "mcbd::Grad2(): Getting Di_bar_inv" << std::endl;
+        arma::mat Di_bar_inv = get_D_bar_inv(i);
+        arma::mat epsi = mcd_get_TResid(i);
 
-      if (debug) std::cout << "mcbd::Grad2(): size(Gi) = " << arma::size(Gi) << std::endl;
-      if (debug) std::cout << "mcbd::Grad2(): size(Di_bar_inv) = " << arma::size(Di_bar_inv) << std::endl;
-      if (debug) std::cout << "mcbd::Grad2(): size(epsi) = " << arma::size(epsi) << std::endl;
-      if (debug) std::cout << "mcbd::Grad2(): size(psi_) = " << arma::size(psi_) << std::endl;
+        if (debug) std::cout << "mcbd::Grad2(): size(Gi) = " << arma::size(Gi) << std::endl;
+        if (debug) std::cout << "mcbd::Grad2(): size(Di_bar_inv) = " << arma::size(Di_bar_inv) << std::endl;
+        if (debug) std::cout << "mcbd::Grad2(): size(epsi) = " << arma::size(epsi) << std::endl;
+        if (debug) std::cout << "mcbd::Grad2(): size(psi_) = " << arma::size(psi_) << std::endl;
 
-      grad_psi += -Gi.t() * Di_bar_inv * (Gi * psi_ + epsi);
+        grad_psi += -Gi.t() * Di_bar_inv * (Gi * psi_ + epsi);
 
-      if (debug) std::cout << "mcbd::Grad2(): Calculate grad_lmd" << std::endl;
-      arma::mat one_T = arma::ones<arma::vec>(m_(i));
-      arma::mat Wi = get_W(i);
+        if (debug) std::cout << "mcbd::Grad2(): Calculate grad_lmd" << std::endl;
+        arma::mat one_T = arma::ones<arma::vec>(m_(i));
+        arma::mat Wi = get_W(i);
 
-      grad_lmd += -0.5 * arma::kron(one_J.t(), one_T.t() * Wi).t();
-      arma::vec TTr = mcd_get_TTResid(i);
-      for (arma::uword t = 0; t != m_(i); ++t) {
-        arma::uword index = n_atts_ * t;
-        grad_lmd += -0.5 * arma::kron(one_J.t(), eye_Jr) * mcd_CalcDbarDeriv(i,t)
-          * arma::pow(TTr.subvec(index, index + n_atts_ - 1), 2);
+        grad_lmd += -0.5 * arma::kron(one_J.t(), one_T.t() * Wi).t();
+        arma::vec TTr = mcd_get_TTResid(i);
+        for (arma::uword t = 0; t != m_(i); ++t) {
+          arma::uword index = n_atts_ * t;
+          grad_lmd += -0.5 * arma::kron(one_J.t(), eye_Jr) * mcd_CalcDbarDeriv(i,t)
+            * arma::pow(TTr.subvec(index, index + n_atts_ - 1), 2);
+        }
+      } else if (mcbd_mode_obj_ == mcbd_acd) {
+      } else if (mcbd_mode_obj_ == mcbd_hpc) {
       }
+
     }
     if (debug) std::cout << "mcbd::Grad2(): after for loop" << std::endl;
     // grad_gma.t().print("grad_gma = ");
 
     grad2 = -2 * dragonwell::join_vecs({grad_gma, grad_psi, grad_lmd});
+
+
   }
 
   void mcbd::Optimize(const arma::vec &start) {    
