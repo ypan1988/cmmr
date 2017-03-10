@@ -132,6 +132,7 @@ namespace cmmr
 
     arma::mat get_T_bar(const arma::uword i, const arma::uword t) const;
     arma::mat get_T_bar(const arma::uword i) const;
+    arma::mat get_T_bar_inv(const arma::uword i) const;
 
     arma::mat get_D_bar(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_bar_inv(const arma::uword i, const arma::uword t) const;
@@ -154,9 +155,8 @@ namespace cmmr
     void UpdateBeta();
     //void UpdateGamma();
     void UpdateTheta2(const arma::vec &x);
-    
     void Optimize(const arma::vec &start);
-      
+
   private:
     arma::mat get_C(const arma::uword i, const arma::uword t) const;
     arma::mat get_C(const arma::uword i) const;
@@ -171,11 +171,16 @@ namespace cmmr
     arma::vec mcd_get_TResid(const arma::uword i) const;
     arma::vec mcd_get_TTResid(const arma::uword i) const;
 
+    arma::vec acd_TDTResid_;
+    void      acd_UpdateTDTResid();
+    arma::vec acd_get_TDTResid(const arma::uword i) const;
+
   public:
     arma::mat mcd_get_V(const arma::uword i, const arma::uword t, const arma::uword j) const;
     arma::mat mcd_get_G(const arma::uword i) const;
     arma::mat mcd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const;
 
+    arma::mat acd_CalcTransTbarDeriv(const arma::uword i, const arma::uword t) const;
     /**
      * Update matrix D (also calculate log_det_Sigma)
      */

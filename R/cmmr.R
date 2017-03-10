@@ -174,8 +174,8 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
   }
 
-  est <- mcbd_test(m, Y, X, U, V, W, cov.method, start, control$trace)
-  # est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
+  #est <- mcbd_test(m, Y, X, U, V, W, cov.method, start, control$trace)
+  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
   est
 }
 

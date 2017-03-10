@@ -300,6 +300,21 @@ namespace cmmr {
     return Ti_bar;
   }
 
+  arma::mat mcbd::get_T_bar_inv(const arma::uword i) const {
+    arma::mat Ti_bar_inv = arma::zeros<arma::mat>(n_atts_ * m_(i), n_atts_ * m_(i));
+
+    for(arma::uword t = 0; t != m_(i); ++t) {
+      arma::mat Tit_bar_inv = get_T_bar(i, t).i();
+
+      arma::uword rindex = t * n_atts_;
+      arma::uword cindex = t * n_atts_;
+
+      Ti_bar_inv(rindex, cindex, arma::size(Tit_bar_inv)) = Tit_bar_inv;
+    }
+
+    return Ti_bar_inv;
+  }
+
   arma::mat mcbd::get_D_bar(const arma::uword i, const arma::uword t) const {
 
     arma::uword index = 0;
@@ -456,7 +471,10 @@ namespace cmmr {
       if (mcbd_mode_obj_ == mcbd_mcd) {
         mcd_UpdateTResid();
         mcd_UpdateTTResid();
+      } else if (mcbd_mode_obj_ == mcbd_acd) {
+        acd_UpdateTDTResid();
       }
+
       break;
 
     case 1:
@@ -466,7 +484,10 @@ namespace cmmr {
       if (mcbd_mode_obj_ == mcbd_mcd) {
         mcd_UpdateTResid();
         mcd_UpdateTTResid();
+      } else if (mcbd_mode_obj_ == mcbd_acd) {
+        acd_UpdateTDTResid();
       }
+
       break;
 
     case 2:
@@ -477,6 +498,8 @@ namespace cmmr {
       if (mcbd_mode_obj_ == mcbd_mcd) {
         mcd_UpdateTResid();
         mcd_UpdateTTResid();
+      } else if (mcbd_mode_obj_ == mcbd_acd) {
+        acd_UpdateTDTResid();
       }
 
       break;
@@ -664,7 +687,19 @@ namespace cmmr {
             * arma::pow(TTr.subvec(index, index + n_atts_ - 1), 2);
         }
       } else if (mcbd_mode_obj_ == mcbd_acd) {
+        arma::vec TDTr = acd_get_TDTResid(i);
+        for (arma::uword t = 0; t != m_(i); ++t) {
+          arma::uword index = n_atts_ * t;
+          arma::vec xi_it = TDTr.subvec(index, index + n_atts_ - 1);
+          arma::mat Tit_bar_inv = get_T_bar(i, t).i();
+          arma::mat Tit_bar_trans_deriv = acd_CalcTransTbarDeriv(i, t);
+
+          grad_psi += arma::kron(xi_it.t(), arma::eye(lpsi, lpsi)) * Tit_bar_trans_deriv
+            * Tit_bar_inv.t() * xi_it;
+        }
+
       } else if (mcbd_mode_obj_ == mcbd_hpc) {
+
       }
 
     }
@@ -676,9 +711,9 @@ namespace cmmr {
 
   }
 
-  void mcbd::Optimize(const arma::vec &start) {    
+  void mcbd::Optimize(const arma::vec &start) {
   }
-  
+
   arma::mat mcbd::get_C(const arma::uword i, const arma::uword t) const {
     int debug = 0;
 
@@ -792,6 +827,34 @@ namespace cmmr {
     }
   }
 
+  void mcbd::acd_UpdateTDTResid() {
+    acd_TDTResid_ = arma::zeros<arma::vec>(n_atts_ * arma::sum(m_));
+
+    for (arma::uword i = 0; i != n_subs_; ++i) {
+      arma::vec ri = get_Resid(i);
+      arma::mat Ti = get_T(i);
+
+      arma::mat Di_bar_inv = get_D_bar_inv(i);
+      arma::mat Ti_bar_inv = get_T_bar_inv(i);
+
+      arma::vec TDTr = Ti_bar_inv * Di_bar_inv * Ti * ri;
+      if (i == 0) acd_TDTResid_.subvec(0, n_atts_ * m_(0) - 1) = TDTr;
+      else{
+        int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
+        acd_TDTResid_.subvec(index, index + n_atts_ * m_(i) - 1) = TDTr;
+      }
+    }
+  }
+
+  arma::vec mcbd::acd_get_TDTResid(const arma::uword i) const {
+    if (i == 0) return acd_TDTResid_.subvec(0, n_atts_ * m_(0) - 1);
+    else {
+      int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
+      return acd_TDTResid_.subvec(index, index + n_atts_ * m_(i) - 1);
+    }
+  }
+
+
   arma::mat mcbd::mcd_get_V(const arma::uword i, const arma::uword t, const arma::uword j) const {
     arma::uword lpsi = poly_(2) * (n_atts_ * (n_atts_-1) / 2);
     arma::vec vit = get_V(i, t);
@@ -837,7 +900,26 @@ namespace cmmr {
 
     return result;
   }
-  
+
+  arma::mat mcbd::acd_CalcTransTbarDeriv(const arma::uword i, const arma::uword t) const {
+    arma::uword  lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
+    arma::mat result = arma::zeros<arma::mat>(lpsi * n_atts_, n_atts_);
+
+    arma::vec vit = get_V(i, t);
+    arma::uword index = 0;
+    for (arma::uword k = 1; k != n_atts_; ++k) {
+      for (arma::uword j = 0; j < k; ++j) {
+        arma::vec tmp = arma::zeros<arma::vec>(lpsi);
+        tmp.subvec(index * vit.n_elem,  index * vit.n_elem + vit.n_elem - 1);
+        ++index;
+
+        result.submat(j * lpsi, k, j * lpsi + lpsi - 1, k) = tmp;
+      }
+    }
+
+    return result;
+  }
+
   // void CovMcbd::Grad1 ( arma::vec& grad1 ) {
   //   int debug = 1;
 
