@@ -208,7 +208,7 @@ namespace cmmr {
     UpdateMcbd(x);
     free_param_ = fp2;
   }
-  
+
   // void mcbd::set_gamma(const arma::vec &x) {
   //   int fp2 = free_param_;
   //   free_param_ = 2;
@@ -696,6 +696,10 @@ namespace cmmr {
 
           grad_psi += arma::kron(xi_it.t(), arma::eye(lpsi, lpsi)) * Tit_bar_trans_deriv
             * Tit_bar_inv.t() * xi_it;
+          if (debug) xi_it.t().print("xi_it = ");
+          if (debug) Tit_bar_trans_deriv.print("Tit_bar_trans_deriv = ");
+          if (debug) Tit_bar_inv.print("Tit_bar_inv = ");
+          if (debug) grad_psi.t().print("grad_psi = ");
         }
 
       } else if (mcbd_mode_obj_ == mcbd_hpc) {
@@ -902,15 +906,19 @@ namespace cmmr {
   }
 
   arma::mat mcbd::acd_CalcTransTbarDeriv(const arma::uword i, const arma::uword t) const {
+    int debug = 0;
+
     arma::uword  lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
     arma::mat result = arma::zeros<arma::mat>(lpsi * n_atts_, n_atts_);
 
     arma::vec vit = get_V(i, t);
+    if (debug) vit.print("vit = ");
+
     arma::uword index = 0;
     for (arma::uword k = 1; k != n_atts_; ++k) {
       for (arma::uword j = 0; j < k; ++j) {
         arma::vec tmp = arma::zeros<arma::vec>(lpsi);
-        tmp.subvec(index * vit.n_elem,  index * vit.n_elem + vit.n_elem - 1);
+        tmp.subvec(index * vit.n_elem,  index * vit.n_elem + vit.n_elem - 1) = vit;
         ++index;
 
         result.submat(j * lpsi, k, j * lpsi + lpsi - 1, k) = tmp;

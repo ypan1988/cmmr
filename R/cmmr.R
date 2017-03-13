@@ -1,51 +1,51 @@
 #' @title Fit MCBD-based Covariance Matrices Models
-#' 
-#' @description Fit a modified Cholesky block decomposition (MCBD) based 
+#'
+#' @description Fit a modified Cholesky block decomposition (MCBD) based
 #'  covariance matrices Models to longitudinal data with multiple responses.
-#' 
+#'
 #' @param formula
 #' @param data a data frame containing the variables named in formula.
 #' @param cov.method covariance structure modelling method for matrix Dt,
 #'  choose 'mcd' (Pourahmadi, 1999), 'acd' (Chen and Dunson, 2013) or 'hpc'
 #'  (Zhang et al. 2015).
 #' @param control a list (of correct class, resulting from mcmmrControl())
-#'  containing control parameters, see the *mcmmrControl documentation for 
+#'  containing control parameters, see the *mcmmrControl documentation for
 #'  details.
 #' @param start starting values for the parameters in the model.
-#' 
+#'
 #' @examples
 mcmmr <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
-                  cov.method = c('mcd', 'acd', 'hpc'), 
+                  cov.method = c('mcd', 'acd', 'hpc'),
                   control = mcmmrControl(), start = NULL)
 {
   mc <- mcout <- match.call()
-  
+
   if (missing(cov.method))
     stop("cov.method must be specified")
-  
+
   missCtrl <- missing(control)
   if (!missCtrl && !inherits(control, "mcmmrControl"))
   {
     if(!is.list(control))
       stop("'control' is not a list; use mcmmrControl()")
-    
+
     warning("please use mcmmrControl() instead", immediate. = TRUE)
     control <- do.call(mcmmrControl, control)
   }
-  
+
   mc[[1]] <- quote(cmmr::mldFormula)
   args <- eval(mc, parent.frame(1L))
-  
+
   opt <- do.call(optimizeMcmmr,
                  c(args, cov.method, list(control=control, start=start)))
-  
+
   opt
 }
 
 #' @title Modular Functions for Covariance Matrices Model Fits
 #'
 #' @description Modular function for covariance matrices model fits
-#' 
+#'
 #' @param formula
 #'
 #' @name modular
@@ -54,23 +54,23 @@ NULL
 
 #' @rdname modular
 #' @export
-mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3), 
-                       cov.method = c('mcd', 'acd', 'hpc'), 
+mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
+                       cov.method = c('mcd', 'acd', 'hpc'),
                        control = jmcmControl(), start=NULL)
 {
   debug <- 1
-  
+
   if (debug) cat("mldFormula():\n")
-  
+
   mf <- mc <- match.call()
   m <- match(c("formula", "data"), names(mf), 0L)
   mf <- mf[c(1, m)]
-  
+
   f <- Formula::Formula(formula)
   mf[[1]] <- as.name("model.frame")
   mf$formula <- f
   mf <- eval(mf, parent.frame())
-  
+
   Y    <- Formula::model.part(f, data = mf, lhs = 1)
   id   <- Formula::model.part(f, data = mf, lhs = 2)
   time <- Formula::model.part(f, data = mf, lhs = 3)
@@ -78,16 +78,16 @@ mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
   X <- model.matrix(f, data = mf, rhs = 1)
   V <- model.matrix(f, data = mf, rhs = 2)
   W <- model.matrix(f, data = mf, rhs = 3)
-  
+
   index <- order(id, time)
-  
-  Y    <- as.matrix(Y[index, ]) 
+
+  Y    <- as.matrix(Y[index, ])
   id   <- id[index, ]
   time <- time[index, ]
-  
+
   m <- table(id)
   attr(m, "dimnames") <- NULL
-  
+
   U <- NULL
   for (i in 1:length(m))
   {
@@ -98,7 +98,7 @@ mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
       last_index <- sum(m[1:i])
       ti <- time[first_index:last_index]
     }
-    
+
     if(m[i] != 1) {
       for (j in 2:m[i])
       {
@@ -110,12 +110,12 @@ mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
       }
     }
   }
-  
+
   # covariates from rhs of the formula
   Xtmp <- X[index, -1]
   Vtmp <- V[index, -1]
   Wtmp <- W[index, -1]
-  
+
   # covariates based on polynomials of time
   X <- rep(1, length(time))
   V <- rep(1, length(time))
@@ -123,34 +123,34 @@ mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
   for (i in 1:quad[1]) X = cbind(X, time^i)
   for (i in 1:quad[3]) V = cbind(V, time^i)
   for (i in 1:quad[4]) W = cbind(W, time^i)
-  
+
   # combine two parts of the covariates
   X <- cbind(X, Xtmp)
   V <- cbind(V, Vtmp)
   W <- cbind(W, Wtmp)
-  
+
   if (debug) cat("Is Y a matrix: ", is.matrix(Y), "\n")
-  
+
   list(m = m, Y = Y, X = X, U = U, V = V, W = W, time = time)
 }
 
 #' @rdname modular
-#' @export 
+#' @export
 optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
 {
   debug <- 1
   if (debug) cat("optimizeMcmmr():\n")
-  
+
   missStart <- is.null(start)
-  
+
   J <- dim(Y)[2]
-  
+
   lbta <- (J * dim(X)[2]) * 1
   lgma <- (J * dim(U)[2]) * J
   lpsi <- dim(V)[2]       * (J * (J - 1) / 2)
   llmd <- dim(W)[2]       * J
 
-  if (!missStart && (lbta+lgma+lpsi+llmd) != length(start)) 
+  if (!missStart && (lbta+lgma+lpsi+llmd) != length(start))
     Stop("Incorrect start input")
 
   if (missStart) {
@@ -174,8 +174,8 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
   }
 
-  #est <- mcbd_test(m, Y, X, U, V, W, cov.method, start, control$trace)
-  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
+  est <- mcbd_test(m, Y, X, U, V, W, cov.method, start, control$trace)
+  #est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
   est
 }
 
@@ -208,6 +208,3 @@ kcmmr <- function(formula, data = NULL,
     stop("wcov.method must be specified")
 
 }
-
-
-

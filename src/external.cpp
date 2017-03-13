@@ -13,7 +13,7 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
 
   arma::uword n_subs = m.n_elem;
   arma::uword n_atts = Y.n_cols;
-  
+
   arma::uvec poly = arma::zeros<arma::uvec>(4);
   poly(0) = X.n_cols;
   poly(1) = U.n_cols;
@@ -27,7 +27,7 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
   llmd = poly(3)            * n_atts;
   ltht = lbta + lgma + lpsi + llmd;
   ltht2 = lgma + lpsi + llmd;
-  
+
   mcbd_mode cov_obj(0);
   if(cov_method == "mcd") cov_obj.setid(1);
   if(cov_method == "acd") cov_obj.setid(2);
@@ -45,8 +45,8 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
 
   double f_min = 0.0;
   int n_iters = 0;
-        
-  const int kIterMax = 200; // Maximum number of iterations    
+
+  const int kIterMax = 200; // Maximum number of iterations
   const double kEpsilon = std::numeric_limits<double>::epsilon(); // Machine precision
   const double kTolX = 4 * kEpsilon; // Convergence criterion on x values
   const double kScaStepMax = 100; // Scaled maximum step length allowed in line searches
@@ -173,7 +173,7 @@ Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::
 
   arma::uword n_subs = m.n_elem;
   arma::uword n_atts = Y.n_cols;
-  
+
   arma::uvec poly = arma::zeros<arma::uvec>(4);
   poly(0) = X.n_cols;
   poly(1) = U.n_cols;
@@ -187,7 +187,7 @@ Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::
   llmd = poly(3)            * n_atts;
   ltht = lbta + lgma + lpsi + llmd;
   ltht2 = lgma + lpsi + llmd;
-  
+
   mcbd_mode cov_obj(0);
   if(cov_method == "mcd") cov_obj.setid(1);
   if(cov_method == "acd") cov_obj.setid(2);
@@ -208,4 +208,3 @@ Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::
   return Rcpp::List::create( Rcpp::Named("par") = start,
                              Rcpp::Named("npars") = npars);
 }
-
