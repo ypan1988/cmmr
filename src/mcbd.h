@@ -171,8 +171,11 @@ namespace cmmr
     arma::vec mcd_get_TResid(const arma::uword i) const;
     arma::vec mcd_get_TTResid(const arma::uword i) const;
 
+    arma::vec acd_TResid_;
     arma::vec acd_TDTResid_;
+    void      acd_UpdateTResid();
     void      acd_UpdateTDTResid();
+    arma::vec acd_get_TResid(const arma::uword i) const;
     arma::vec acd_get_TDTResid(const arma::uword i) const;
 
   public:
@@ -181,6 +184,8 @@ namespace cmmr
     arma::mat mcd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const;
 
     arma::mat acd_CalcTransTbarDeriv(const arma::uword i, const arma::uword t) const;
+    arma::mat acd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const;
+
     /**
      * Update matrix D (also calculate log_det_Sigma)
      */
