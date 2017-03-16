@@ -303,12 +303,29 @@ namespace cmmr {
     if (i != 0) index = arma::sum(m_.rows(0, i-1));
 
     if (debug) std::cout << "mcbd::get_T_bar(): index = " << index << std::endl;
-    arma::vec Ti_bar_elem = arma::trans(VPsi_.row(index + t));
+    arma::vec Tit_bar_elem = arma::trans(VPsi_.row(index + t));
 
-    arma::mat Ti_bar = arma::eye(n_atts_, n_atts_);
-    Ti_bar = dragonwell::ltrimat(n_atts_, Ti_bar_elem);
+    arma::mat Tit_bar = arma::eye(n_atts_, n_atts_);
+    Tit_bar = dragonwell::ltrimat(n_atts_, Tit_bar_elem);
 
-    return Ti_bar;
+    if (mcbd_mode_obj_ == mcbd_hpc) {
+      arma::mat mat_angles = Tit_bar;
+      arma::mat result = arma::eye(n_atts_, n_atts_);
+
+      result(0, 0) = 1;
+      for (int j = 1; j != n_atts_; ++j) {
+        result(j, 0) = std::cos(mat_angles(j, 0));
+        result(j, j) = arma::prod(arma::prod(arma::sin(mat_angles.submat(j, 0, j, j - 1))));
+        for (int l = 1; l != j; ++l) {
+          result(j, l) =
+            std::cos(mat_angles(j, l)) *
+            arma::prod(arma::prod(arma::sin(mat_angles.submat(j, 0, j, l - 1))));
+        }
+      }
+      return result;
+    }
+
+    return Tit_bar;
   }
 
   arma::mat mcbd::get_T_bar(const arma::uword i) const {
@@ -346,7 +363,7 @@ namespace cmmr {
 
     if (mcbd_mode_obj_ == mcbd_mcd)
       Dit_bar_elem = arma::trans(arma::exp(WLmd_.row(index + t)));
-    else if (mcbd_mode_obj_ == mcbd_acd)
+    else if (mcbd_mode_obj_ == mcbd_acd || mcbd_mode_obj_ == mcbd_hpc)
       Dit_bar_elem = arma::trans(arma::exp(WLmd_.row(index + t) / 2));
 
     arma::mat Dit_bar = arma::eye(n_atts_, n_atts_);
@@ -385,7 +402,7 @@ namespace cmmr {
     arma::mat Dit_inv;
 
     if (mcbd_mode_obj_ == mcbd_mcd) { Dit_inv = Tit_bar.t() * Dit_bar_inv * Tit_bar; }
-    else if (mcbd_mode_obj_ == mcbd_acd) {
+    else if (mcbd_mode_obj_ == mcbd_acd || mcbd_mode_obj_ == mcbd_hpc) {
       arma::mat Tit_bar_inv = Tit_bar.i();
       Dit_inv = Dit_bar_inv * Tit_bar_inv.t() * Tit_bar_inv * Dit_bar_inv;
     }
@@ -756,7 +773,6 @@ namespace cmmr {
             * Tit_bar_inv.t() * xi_it;
 
         }
-
       } else if (mcbd_mode_obj_ == mcbd_hpc) {
 
       }

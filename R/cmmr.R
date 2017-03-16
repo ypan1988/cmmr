@@ -164,7 +164,15 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
       lmd0 <- c(lmd0, coef(lm(log(res^2) ~ W - 1)))
     }
     gma0 <- rep(0, lgma)
-    psi0 <- rep(0, lpsi)
+    psi0 <- NULL
+    for (j in 2:J) {
+      for (k in 1:(j-1)) {
+        tmp <- rep(0, dim(V)[2])
+        if (cov.method == 'hpc') tmp[1] <- pi/2
+        psi0 <- c(psi0, tmp)
+      }
+    }
+#        psi0 <- rep(0, lpsi)
 
     if (debug) cat("bta0[", length(bta0),"]: ", bta0, "\n")
     if (debug) cat("gma0[", length(gma0),"]: ", gma0, "\n")
