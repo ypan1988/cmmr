@@ -196,6 +196,9 @@ Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::
   if (debug) std::cout << "mcbd_test(): creating mcbd object..." << std::endl;
   cmmr::mcbd mcbd_obj(m, Y, X, U, V, W, cov_obj);
 
+  mcbd_obj.get_T_bar(2,0).print("T31 = ");
+  mcbd_obj.get_T_bar(2,2).print("T33 = ");
+
   arma::vec grad1;
   grad1 = mcbd_obj.CalcDeriv(start);
   grad1.t().print("grad1 = ");
