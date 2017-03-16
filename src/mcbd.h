@@ -108,7 +108,6 @@ namespace cmmr
     arma::vec get_V(const arma::uword i, const arma::uword t) const;
     arma::vec get_W(const arma::uword i, const arma::uword t) const;
     arma::vec get_Resid(const arma::uword i, const arma::uword t) const;
-
     arma::vec get_theta() const { return tht_; }
     arma::vec get_beta() const { return bta_; }
     arma::vec get_gamma() const { return gma_; }

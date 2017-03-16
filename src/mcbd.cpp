@@ -699,7 +699,10 @@ namespace cmmr {
         arma::vec TDTr = acd_get_TDTResid(i);
         for (arma::uword t = 0; t != m_(i); ++t) {
           arma::uword index = n_atts_ * t;
+
+          arma::vec epsit = epsi.subvec(index, index + n_atts_ - 1);
           arma::vec xi_it = TDTr.subvec(index, index + n_atts_ - 1);
+
           arma::mat Tit_bar_inv = get_T_bar(i, t).i();
           arma::mat Tit_bar_trans_deriv = acd_CalcTransTbarDeriv(i, t);
 
@@ -710,8 +713,7 @@ namespace cmmr {
           if (debug) Tit_bar_inv.print("Tit_bar_inv = ");
           if (debug) grad_psi.t().print("grad_psi = ");
 
-          arma::vec epsit = epsi.subvec(n_atts_ * t, n_atts_ * t + n_atts_ - 1);
-          grad_lmd += arma::kron(epsit.t(), eye_Jr) * acd_CalcDbarDeriv(i, t)
+          grad_lmd -= arma::kron(epsit.t(), eye_Jr) * acd_CalcDbarDeriv(i, t)
             * Tit_bar_inv.t() * xi_it;
 
         }
@@ -973,38 +975,9 @@ namespace cmmr {
     arma::vec wit = get_W(i, t);
     arma::mat Dit_bar = get_D_bar(i, t);
     for(arma::uword j = 0; j != n_atts_; ++j) {
-      result(j*poly_(3), j, arma::size(poly_(3), 1)) = -wit / Dit_bar(j,j);
+      result(j*poly_(3), j, arma::size(poly_(3), 1)) = -0.5 * wit / Dit_bar(j,j);
     }
 
     return result;
   }
-
-
-  // void CovMcbd::Grad1 ( arma::vec& grad1 ) {
-  //   int debug = 1;
-
-  //   int lbta = bta_.n_elem;
-  //   grad1 = arma::zeros<arma::vec> ( lbta );
-  //   for ( int i = 1; i <= n_subs_; ++i ) {
-  //     arma::vec Yi = get_Y ( i );
-  //     arma::mat Xi = get_X ( i );
-  //     grad1 += Xi.t() * Sigma_inv_ * ( Yi - Xi * bta_ );
-  //   }
-
-  //   if ( debug ) grad1.print ( "grad1 = " );
-  // }
-
-  // void CovMcbd::Grad2 ( arma::vec& grad2 ) {
-  //   int debug = 1;
-
-  //   int llmd = lmd_.n_elem;
-  //   grad2 = arma::zeros<arma::vec> ( llmd );
-
-  //   arma::vec oneJ = arma::ones<arma::vec> ( n_atts_ );
-  //   arma::vec oneT = arma::ones<arma::vec> ( n_dims_ );
-  //   arma::vec oneTJ = arma::ones<arma::vec> ( n_dims_ * n_atts_ );
-  //   grad2 = n_dims_ * arma::kron ( oneJ, W_.t() * oneT );
-
-  //   if ( debug ) grad2.print("grad2 = ");
-  // }
 }
