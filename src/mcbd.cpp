@@ -713,6 +713,13 @@ namespace cmmr {
           if (debug) Tit_bar_inv.print("Tit_bar_inv = ");
           if (debug) grad_psi.t().print("grad_psi = ");
 
+          int debug2 = 0;
+          if (debug2) epsit.t().print("epsit.t() = ");
+          if (debug2) arma::kron(epsit.t(), eye_Jr).print("kron = ");
+          if (debug2) acd_CalcDbarDeriv(i, t).print("D_bar_deriv = ");
+          if (debug2) Tit_bar_inv.t().print("Tit_bar_inv.t() = ");
+          if (debug2) xi_it.print("xi_it = ");
+
           grad_lmd -= arma::kron(epsit.t(), eye_Jr) * acd_CalcDbarDeriv(i, t)
             * Tit_bar_inv.t() * xi_it;
 
@@ -939,7 +946,8 @@ namespace cmmr {
     arma::vec wit = get_W(i, t);
     arma::mat Dit_bar = get_D_bar(i, t);
     for(arma::uword j = 0; j != n_atts_; ++j) {
-      result(j*poly_(3), j, arma::size(poly_(3), 1)) = -wit / Dit_bar(j,j);
+      //result(j*poly_(3), j, arma::size(poly_(3), 1)) = -wit / Dit_bar(j,j);
+      result(j*llmd + j*poly_(3), j, arma::size(poly_(3), 1)) = -wit / Dit_bar(j,j);
     }
 
     return result;
@@ -975,7 +983,8 @@ namespace cmmr {
     arma::vec wit = get_W(i, t);
     arma::mat Dit_bar = get_D_bar(i, t);
     for(arma::uword j = 0; j != n_atts_; ++j) {
-      result(j*poly_(3), j, arma::size(poly_(3), 1)) = -0.5 * wit / Dit_bar(j,j);
+      //result(j*poly_(3), j, arma::size(poly_(3), 1)) = -0.5 * wit / Dit_bar(j,j);
+      result(j*llmd+j*poly_(3), j, arma::size(poly_(3), 1)) = -0.5 * wit / Dit_bar(j,j);
     }
 
     return result;
