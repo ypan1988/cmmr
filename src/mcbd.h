@@ -192,37 +192,11 @@ namespace cmmr
     arma::mat acd_CalcTransTbarDeriv(const arma::uword i, const arma::uword t) const;
     arma::mat acd_CalcDbarDeriv(const arma::uword i, const arma::uword t) const;
 
+    arma::mat hpc_get_angles(const arma::uword i, const arma::uword t) const;
+    arma::vec hpc_CalcTitjkDeriv(const arma::uword i, const arma::uword t,
+                                 const arma::uword j, const arma::uword k) const;
+    arma::mat hpc_CalcTransTbarDeriv(const arma::uword i, const arma::uword t) const;
     arma::mat hpc_CalcDbarDeriv(const arma::uword i, const arma::uword t) const;
-
-
-    /**
-     * Update matrix D (also calculate log_det_Sigma)
-     */
-    /* void Update_D() { */
-    /*   int debug = 0; */
-
-    /*   log_det_Sigma_ = 0.0; */
-    /*   arma::mat result = arma::eye ( n_atts_ * n_dims_, n_atts_ * n_dims_ ); */
-    /*   for ( int i = 1; i <= n_dims_; ++i ) { */
-    /*     arma::mat Dt = get_D ( i ); */
-
-    /*     double val; */
-    /*     double sign; */
-    /*     arma::log_det(val, sign, Dt); */
-    /*     log_det_Sigma_ += val; */
-
-    /*     int rindex = ( i - 1 ) * n_atts_; */
-    /*     int cindex = ( i - 1 ) * n_atts_; */
-    /*     result ( rindex, cindex, arma::size ( Dt ) ) = Dt; */
-
-    /*     if ( debug ) { */
-    /*       result.print ( "result = " ); */
-    /*     } */
-    /*   } */
-
-    /*   D_ = result; */
-    /* } */
-
   };
 }
 
