@@ -45,8 +45,16 @@ namespace cmmr {
     llmd = poly_(3)             * n_atts_;
     ltht = lbta + lgma + lpsi + llmd;
 
+    if (debug) {
+      std::cout << "mcbd::mcbd(): before UpdateMcbd()" <<  std::endl;
+    }
+
     arma::vec x = arma::zeros<arma::vec>(ltht);
     UpdateMcbd(x);
+
+    if (debug) {
+      std::cout << "mcbd::mcbd(): after UpdateMcbd()" <<  std::endl;
+    }
 
     if (debug) std::cout << "mcbd obj created..." << std::endl;
   }
@@ -231,15 +239,24 @@ namespace cmmr {
   // }
 
   arma::mat mcbd::get_T(const arma::uword i, const arma::uword t, const arma::uword k ) const {
-    //int debug = 0;
+    int debug = 0;
+    if (debug) std::cout << "mcbd::get_T(): "
+                         << " i = " << i
+                         << " t = " << t
+                         << " k = " << k << std::endl;
+    if (debug) std::cout << "mcbd::get_T(): " << arma::size(UGma_) << std::endl;
+    if (debug) m_.t().print("m = ");
 
     int mat_cnt = 0;
     if (i == 0) mat_cnt = 0;
     else {
       for(arma::uword idx = 0; idx != i; ++idx) {
-        mat_cnt += m_(i) * (m_(i) - 1) / 2 ;
+        mat_cnt += m_(idx) * (m_(idx) - 1) / 2 ;
+        if (debug) std::cout << idx << ": " << mat_cnt << " ";
       }
     }
+
+    if (debug) std::cout << "mcbd::get_T(): mat_cnt = " << mat_cnt << std::endl;
 
     for (arma::uword idx = 1; idx <= t; ++idx) {
       if ( idx != t ) {
@@ -250,18 +267,23 @@ namespace cmmr {
     }
 
     int rindex = mat_cnt * n_atts_;
+    if (debug) std::cout << "mcbd::get_T(): rindex = " << rindex << std::endl;
     return UGma_.rows ( rindex, rindex + n_atts_ - 1 );
   }
 
   arma::mat mcbd::get_T(const arma::uword i) const {
+    int debug = 0;
     arma::mat Ti = arma::eye(n_atts_ * m_(i), n_atts_ * m_(i));
     for(arma::uword t = 1; t != m_(i); ++t) {
       for(arma::uword k = 0; k != t; ++k) {
+        if (debug) std::cout << "t = " << t << " k = " << k << std::endl;
+        if (debug) std::cout << "getting Phi_itk" <<  std::endl;
         arma::mat Phi_itk = get_T(i, t, k);
 
         arma::uword rindex = t * n_atts_;
         arma::uword cindex = k * n_atts_;
 
+        if (debug) std::cout << "plug in Phi_itk" <<  std::endl;
         Ti(rindex, cindex, arma::size(Phi_itk)) = -Phi_itk;
       }
     }
@@ -412,7 +434,10 @@ namespace cmmr {
   }
 
   void mcbd::UpdateMcbd(const arma::vec &x) {
+    int debug = 0;
+    if (debug) std::cout << "mcbd::UpdateMcbd(): Update Paramesters..." << std::endl;
     UpdateParam(x);
+    if (debug) std::cout << "mcbd::UpdateMcbd(): Update Models..." << std::endl;
     UpdateModel();
   }
 
@@ -460,8 +485,12 @@ namespace cmmr {
   }
 
   void mcbd::UpdateModel() {
+    int debug = 0;
     switch (free_param_) {
     case 0:
+
+      if (debug) std::cout << "UpdateModel: Update common parts" << std::endl;
+
       Xbta_ = X_ * bta_;
       UGma_ = U_ * Gma_;
       VPsi_ = V_ * Psi_;
@@ -472,7 +501,10 @@ namespace cmmr {
         mcd_UpdateTResid();
         mcd_UpdateTTResid();
       } else if (mcbd_mode_obj_ == mcbd_acd) {
+        if (debug) std::cout << "UpdateModel: Update acd parts" << std::endl;
+        if (debug) std::cout << "UpdateModel: Update acd TResid" << std::endl;
         acd_UpdateTResid();
+        if (debug) std::cout << "UpdateModel: Update acd TDTResid" << std::endl;
         acd_UpdateTDTResid();
       }
 
@@ -855,16 +887,22 @@ namespace cmmr {
   }
 
   void mcbd::acd_UpdateTResid() {
+    int debug = 0;
+    if (debug) m_.t().print("acd_UpdateTResid(): m = ");
     acd_TResid_ = arma::zeros<arma::vec>(n_atts_ * arma::sum(m_));
 
     for (arma::uword i = 0; i != n_subs_; ++i) {
+      if (debug) std::cout << "i = " << i << std::endl;
+      if (debug) std::cout << "getting ri " << std::endl;
       arma::vec ri = get_Resid(i);
+      if (debug) std::cout << "getting Ti " << std::endl;
       arma::mat Ti = get_T(i);
 
       arma::vec Tr = Ti * ri;
       if (i == 0) acd_TResid_.subvec(0, n_atts_ * m_(0) - 1) = Tr;
       else{
         int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
+        if (debug) std::cout << "index = " << index << std::endl;
         acd_TResid_.subvec(index, index + n_atts_ * m_(i) - 1) = Tr;
       }
     }

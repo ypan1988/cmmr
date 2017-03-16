@@ -169,7 +169,7 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
 Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::mat V, arma::mat W,
                      std::string cov_method, arma::vec start, bool trace = false)
 {
-  int debug = 0;
+  int debug = 1;
 
   arma::uword n_subs = m.n_elem;
   arma::uword n_atts = Y.n_cols;
@@ -193,6 +193,7 @@ Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::
   if(cov_method == "acd") cov_obj.setid(2);
   if(cov_method == "hpc") cov_obj.setid(3);
 
+  if (debug) std::cout << "mcbd_test(): creating mcbd object..." << std::endl;
   cmmr::mcbd mcbd_obj(m, Y, X, U, V, W, cov_obj);
 
   arma::vec grad1;
