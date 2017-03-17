@@ -1171,45 +1171,45 @@ namespace cmmr {
 
     arma::vec result = arma::zeros<arma::vec>(lpsi);
 
-    if (j == 0) return result;
-    else {
-      arma::uword index = 0;
-      for (arma::uword rindex = 1; rindex != j; ++rindex) index += rindex * poly_(2);
+  //   if (j == 0) return result;
+  //   else {
+  //     arma::uword index = 0;
+  //     for (arma::uword rindex = 1; rindex != j; ++rindex) index += rindex * poly_(2);
 
-      arma::vec vit = get_V(i, t);
-      if (j == k) {
-        for (arma::uword cindex = 0; cindex != j; ++cindex) {
-          result.subvec(index, index + poly_(2) - 1) = Tit_bar(j, j) / sin(mat_angles(j, cindex))
-            * cos(mat_angles(j, cindex)) * vit;
-          index += poly_(2);
-        }
-      } else if (j > k) {
+  //     arma::vec vit = get_V(i, t);
+  //     if (j == k) {
+  //       for (arma::uword cindex = 0; cindex != j; ++cindex) {
+  //         result.subvec(index, index + poly_(2) - 1) = Tit_bar(j, j) / sin(mat_angles(j, cindex))
+  //           * cos(mat_angles(j, cindex)) * vit;
+  //         index += poly_(2);
+  //       }
+  //     } else if (j > k) {
 
-      }
+  //     }
 
-    // result(0, 0) = 1;
-    // for (arma::uword j = 1; j != n_atts_; ++j) {
-    //   result(j, 0) = std::cos(mat_angles(j, 0));
-    //   result(j, j) = arma::prod(arma::prod(arma::sin(mat_angles.submat(j, 0, j, j - 1))));
-    //   for (arma::uword l = 1; l != j; ++l) {
-    //     result(j, l) =
-    //       std::cos(mat_angles(j, l)) *
-    //       arma::prod(arma::prod(arma::sin(mat_angles.submat(j, 0, j, l - 1))));
-    //   }
-    // }
+  //   // result(0, 0) = 1;
+  //   // for (arma::uword j = 1; j != n_atts_; ++j) {
+  //   //   result(j, 0) = std::cos(mat_angles(j, 0));
+  //   //   result(j, j) = arma::prod(arma::prod(arma::sin(mat_angles.submat(j, 0, j, j - 1))));
+  //   //   for (arma::uword l = 1; l != j; ++l) {
+  //   //     result(j, l) =
+  //   //       std::cos(mat_angles(j, l)) *
+  //   //       arma::prod(arma::prod(arma::sin(mat_angles.submat(j, 0, j, l - 1))));
+  //   //   }
+  //   // }
 
-    // if (j < t) {
-    //   result = Tit_bar(t, j) * (-std::tan(mat_angles(t, j)) * get_V(i, t));
-    //   for (int l = 0; l != j; ++l) {
-    //     result += Tit_bar(t, j) * get_V(i, t) / std::tan(mat_angles(t, l));
-    //   }
-    //   return result;
-    // } else if (j == t) {
-    //   for (int l = 0; l != j; ++l) {
-    //     result += Tit_bar(t, j) * get_V(i, t) / std::tan(mat_angles(t, l));
-    //   }
-    //   return result;
-    // }
+  //   // if (j < t) {
+  //   //   result = Tit_bar(t, j) * (-std::tan(mat_angles(t, j)) * get_V(i, t));
+  //   //   for (int l = 0; l != j; ++l) {
+  //   //     result += Tit_bar(t, j) * get_V(i, t) / std::tan(mat_angles(t, l));
+  //   //   }
+  //   //   return result;
+  //   // } else if (j == t) {
+  //   //   for (int l = 0; l != j; ++l) {
+  //   //     result += Tit_bar(t, j) * get_V(i, t) / std::tan(mat_angles(t, l));
+  //   //   }
+  //   //   return result;
+  //   // }
 
     return result;
   }
@@ -1225,7 +1225,7 @@ namespace cmmr {
 
     for (arma::uword j = 1; j != n_atts_; ++j) {
       for (arma::uword k = 0; k <= j; ++k) {
-        result.submat(k * lpsi, j, k * lpsi + lpsi - 1, j) = hpc_CalcTitjkDeriv(i, t, j, k);
+        //result.submat(k * lpsi, j, k * lpsi + lpsi - 1, j) = hpc_CalcTitjkDeriv(i, t, j, k);
       }
     }
 
