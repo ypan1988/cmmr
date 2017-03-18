@@ -1171,7 +1171,7 @@ namespace cmmr {
 
     arma::vec result = arma::zeros<arma::vec>(lpsi);
 
-  //   if (j == 0) return result;
+    if (j == 0 || j < k) return result;
   //   else {
   //     arma::uword index = 0;
   //     for (arma::uword rindex = 1; rindex != j; ++rindex) index += rindex * poly_(2);
