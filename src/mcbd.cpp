@@ -1171,7 +1171,19 @@ namespace cmmr {
 
     arma::vec result = arma::zeros<arma::vec>(lpsi);
 
+    arma::vec vit = get_V(i,t);
+
     if (j == 0 || j < k) return result;
+    else if (j == k) {
+      arma::uword idx = 0;
+      for (arma::uword rindex = 0; rindex != j; ++rindex) idx += poly_(2) * rindex;
+
+      for (arma::uword cindex = 0; cindex != j; ++cindex) {
+        result.subvec(idx, idx + poly_(2) - 1) = Tit_bar(j, j)
+          / sin(mat_angles(j, cindex)) * cos(mat_angles(j, cindex)) * vit;
+      }
+
+    }
   //   else {
   //     arma::uword index = 0;
   //     for (arma::uword rindex = 1; rindex != j; ++rindex) index += rindex * poly_(2);
