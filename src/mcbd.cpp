@@ -1178,7 +1178,7 @@ namespace cmmr {
       arma::uword idx = 0;
       for (arma::uword rindex = 0; rindex != j; ++rindex) idx += poly_(2) * rindex;
 
-      for (arma::uword cindex = 0; cindex != j; ++cindex) {
+      for (arma::uword cindex = 0; cindex != k; ++cindex) {
         result.subvec(idx, idx + poly_(2) - 1) = Tit_bar(j, j)
           / sin(mat_angles(j, cindex)) * cos(mat_angles(j, cindex)) * vit;
         idx += poly_(2);
@@ -1187,7 +1187,7 @@ namespace cmmr {
       arma::uword idx = 0;
       for (arma::uword rindex = 0; rindex != j; ++rindex) idx += poly_(2) * rindex;
 
-      result.subvec(idx, idx + poly_(2) - 1) = -cos(mat_angles(j, 0)) * vit;
+      result.subvec(idx, idx + poly_(2) - 1) = -sin(mat_angles(j, 0)) * vit;
 
     } else {
       arma::uword idx = 0;
@@ -1206,7 +1206,7 @@ namespace cmmr {
   }
 
   arma::mat mcbd::hpc_CalcTransTbarDeriv(const arma::uword i, const arma::uword t) const {
-    int debug = 0;
+    // int debug = 0;
 
     arma::uword  lpsi = poly_(2)             * (n_atts_ * (n_atts_-1) / 2);
     arma::mat result = arma::zeros<arma::mat>(lpsi * n_atts_, n_atts_);
@@ -1214,9 +1214,9 @@ namespace cmmr {
     // arma::vec vit = get_V(i, t);
     // if (debug) vit.print("vit = ");
 
-    for (arma::uword j = 1; j != n_atts_; ++j) {
-      for (arma::uword k = 0; k <= j; ++k) {
-        result.submat(k * lpsi, j, k * lpsi + lpsi - 1, j) = hpc_CalcTitjkDeriv(i, t, j, k);
+    for (arma::uword k = 1; k != n_atts_; ++k) {
+      for (arma::uword j = 0; j <= k; ++j) {
+        result.submat(j * lpsi, k, j * lpsi + lpsi - 1, k) = hpc_CalcTitjkDeriv(i, t, k, j);
       }
     }
 
