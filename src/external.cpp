@@ -9,7 +9,7 @@
 Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::mat V, arma::mat W,
                            std::string cov_method, arma::vec start, bool trace = false)
 {
-  int debug = 0;
+  int debug = 1;
 
   arma::uword n_subs = m.n_elem;
   arma::uword n_atts = Y.n_cols;

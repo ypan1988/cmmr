@@ -58,7 +58,7 @@ mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
                        cov.method = c('mcd', 'acd', 'hpc'),
                        control = jmcmControl(), start=NULL)
 {
-  debug <- 1
+  debug <- 0
 
   if (debug) cat("mldFormula():\n")
 
@@ -138,9 +138,14 @@ mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
 #' @export
 optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
 {
-  debug <- 1
+  debug <- 0
   if (debug) cat("optimizeMcmmr():\n")
-
+  if (debug) cat("dim(Y)", dim(Y), "\n")
+  if (debug) cat("dim(X)", dim(X), "\n")
+  if (debug) cat("dim(U)", dim(U), "\n")
+  if (debug) cat("dim(V)", dim(V), "\n")
+  if (debug) cat("dim(W)", dim(W), "\n")
+  
   missStart <- is.null(start)
 
   J <- dim(Y)[2]
@@ -153,17 +158,76 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
   if (!missStart && (lbta+lgma+lpsi+llmd) != length(start))
     Stop("Incorrect start input")
 
-  if (missStart) {
+  isBalancedData <- all(m == m[1])
+  if (missStart && isBalancedData) {
+    Y.new <- c(t(Y))
+    X.new <- NULL
+    for (idx in 1:dim(X)[1])
+      X.new <- rbind(X.new, kronecker(diag(J), matrix(X[idx, ], 1, )))
+    lm.obj <- lm(Y.new ~ X.new - 1)
+    bta0 <- coef(lm.obj)
+
+    scm <- 0
+    for(i in 1:length(m))
+    {
+      row.idx = (i-1) * (m[1] * J)
+      Yi <- Y.new[(row.idx+1):(row.idx+m[1]*J)]
+      Xi <- X.new[(row.idx+1):(row.idx+m[1]*J),]
+      scm <- scm + (Yi - Xi %*% bta0) %*% t(Yi - Xi %*% bta0)
+    }
+    scm <- scm/length(m)
+    
+    chol.C <- t(chol(scm))
+    chol.D <- diag(J * m[1])
+    chol.D.sqrt <- diag(J * m[1])
+    
+    chol.T.bar <- diag(J * m[1])
+    chol.D.bar <- diag(J * m[1]) 
+
+    for(t in 1:m[1])
+    {
+      row.idx = (t-1) * J
+      index <- (row.idx+1):(row.idx+J)
+      #cat("index = ", index, "\n")
+      Dt.sqrt <- chol.C[index,index]
+      Dt <- Dt.sqrt %*% t(Dt.sqrt)
+      chol.D.sqrt[index, index] <- Dt.sqrt
+      chol.D[index, index] <- Dt
+      
+      chol2.C <- t(chol(Dt))
+    }
+    chol.T <- chol.D.sqrt %*% forwardsolve(chol.C, diag(J * m[1]))
+    chol.D.sqr <- chol.D %*% t(chol.D)
+    chol.T.bar <- diag(J * m[1])
+    chol.D.bar <- diag(J * m[1])
+    for (t in 1:m[1])
+    {
+        
+    }
+  } else if (missStart && !isBalancedData) {
     bta0 <- NULL
     lmd0 <- NULL
-    for (j in 1:J) {
-      cat("dim(Y)", dim(Y), "\n")
-      lm.obj <- lm(Y[,j] ~ X - 1)
-      bta0 <- c(bta0, coef(lm.obj))
-      resid(lm.obj) -> res
-      lmd0 <- c(lmd0, coef(lm(log(res^2) ~ W - 1)))
-    }
     gma0 <- rep(0, lgma)
+    for (j in 1:J) {
+      lm.obj <- lm(Y[,j] ~ X - 1)
+      mcd.bta0 <- coef(lm.obj)
+      
+      resid(lm.obj) -> res
+      mcd.lmd0 <- coef(lm(log(res^2) ~ W - 1))
+      mcd.gma0 <- rep(0, dim(U)[2])
+      
+      mcd.start <- c(mcd.bta0, mcd.lmd0, mcd.gma0)
+      
+      est <- jmcm::mcd_estimation(m, Y[,j], X, W, U, mcd.start, Y[,j])
+      
+      if(debug) cat("est:", str(est))
+      bta0 <- c(bta0, est$beta)
+      lmd0 <- c(lmd0, est$lambda)
+
+      idx = J*J*(j-1) + J*(j-1)
+      gma0[(idx+1):(idx+dim(U)[2])] = est$gamma
+    }
+
     psi0 <- NULL
     for (j in 2:J) {
       for (k in 1:(j-1)) {
@@ -174,6 +238,11 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     }
 #        psi0 <- rep(0, lpsi)
 
+    if (debug) cat("bta0: ", bta0, bta0, "\n")
+    if (debug) cat("gma0: ", gma0, gma0, "\n")
+    if (debug) cat("psi0: ", psi0, psi0, "\n")
+    if (debug) cat("lmd0: ", lmd0, lmd0, "\n")
+    
     if (debug) cat("bta0[", length(bta0),"]: ", bta0, "\n")
     if (debug) cat("gma0[", length(gma0),"]: ", gma0, "\n")
     if (debug) cat("psi0[", length(psi0),"]: ", psi0, "\n")
@@ -182,8 +251,8 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
   }
 
-  est <- mcbd_test(m, Y, X, U, V, W, cov.method, start, control$trace)
-  #est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
+  #est <- mcbd_test(m, Y, X, U, V, W, cov.method, start, control$trace)
+  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
   est
 }
 
