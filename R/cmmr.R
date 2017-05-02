@@ -203,8 +203,8 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
       chol2.D.sqrt <- diag(diag(chol2.C))
       chol2.D <- chol2.D.sqrt %*% chol2.D.sqrt
       chol2.T <- chol2.D.sqrt %*% forwardsolve(chol2.C, diag(J))
-  
-      Ttmp <- t(chol2.T)
+
+      Ttmp  <- t(chol2.T)
       Tau   <- rbind(Tau, Ttmp[upper.tri(Ttmp)])
       Delta <- rbind(Delta, log(diag(chol2.D)))
     }
