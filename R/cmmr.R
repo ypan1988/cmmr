@@ -162,8 +162,13 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
   if (missStart && isBalancedData) {
     Y.new <- c(t(Y))
     X.new <- NULL
+    U.new <- NULL
+    
     for (idx in 1:dim(X)[1])
       X.new <- rbind(X.new, kronecker(diag(J), matrix(X[idx, ], 1, )))
+    for (idx in 1:dim(U)[1])
+      U.new <- rbind(U.new, kronecker(diag(J), matrix(U[idx, ], 1, )))
+    
     lm.obj <- lm(Y.new ~ X.new - 1)
     bta0 <- coef(lm.obj)
 
@@ -180,10 +185,11 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     chol.C <- t(chol(scm))
     chol.D <- diag(J * m[1])
     chol.D.sqrt <- diag(J * m[1])
-    
-    chol.T.bar <- diag(J * m[1])
-    chol.D.bar <- diag(J * m[1]) 
+    chol.T.bar  <- diag(J * m[1])
+    chol.D.bar  <- diag(J * m[1]) 
 
+    T.bar.elem <- NULL
+    D.bar.elem <- NULL
     for(t in 1:m[1])
     {
       row.idx = (t-1) * J
@@ -192,18 +198,31 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
       Dt.sqrt <- chol.C[index,index]
       Dt <- Dt.sqrt %*% t(Dt.sqrt)
       chol.D.sqrt[index, index] <- Dt.sqrt
-      chol.D[index, index] <- Dt
+      chol.D[index, index]      <- Dt
       
       chol2.C <- t(chol(Dt))
-    }
-    chol.T <- chol.D.sqrt %*% forwardsolve(chol.C, diag(J * m[1]))
-    chol.D.sqr <- chol.D %*% t(chol.D)
-    chol.T.bar <- diag(J * m[1])
-    chol.D.bar <- diag(J * m[1])
-    for (t in 1:m[1])
-    {
+      chol2.D.sqrt <- diag(diag(chol2.C))
+      chol2.T <- chol2.D.sqrt %*% forwardsolve(chol2.C, diag(J))
         
+      T.bar.elem <- c(T.bar.elem, upper.tri(t(chol2.T)))
+      D.bar.elem <- c(D.bar.elem, diag(chol2.C))
     }
+    lm.obj3 <- lm(T.bar.elem ~ V - 1)
+    psi0 <- coef(lm.obj3)
+    lm.obj4 <- lm(log(D.bar.elem) ~ W - 1)
+    lmd0 <- coef(lm.obj4)
+        
+    chol.T <- chol.D.sqrt %*% forwardsolve(chol.C, diag(J * m[1]))
+    T.elem <- NULL
+    for(t in 2:m[1]) {
+      for(k in 1:(t-1)) {
+        index1 <- ((t-1) * J + 1) : ((t-1) * J + J)
+        index2 <- ((k-1) * J + 1) : ((k-1) * J + J)
+        Ttk <- chol.T[index1, index2]
+        
+      }
+    }
+    
   } else if (missStart && !isBalancedData) {
     bta0 <- NULL
     lmd0 <- NULL
