@@ -69,7 +69,24 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
 
     arma::vec x2 = x;  // Save the old point
 
-    linesearch.GetStep(mcbd_obj, x, p, kStepMax);
+    // original linesearch:
+    // linesearch.GetStep(mcbd_obj, x, p, kStepMax);
+
+    arma::vec x_mean = x.subvec(0, lbta - 1);
+    arma::vec x_cov  = x.subvec(lbta, ltht - 1);
+    arma::vec p_mean = p.subvec(0, lbta - 1);
+    arma::vec p_cov  = p.subvec(lbta, ltht - 1);
+
+    mcbd_obj.set_free_param(1);
+    linesearch.GetStep(mcbd_obj, x_mean, p_mean, kStepMax);
+    mcbd_obj.set_free_param(0);
+
+    mcbd_obj.set_free_param(2);
+    linesearch.GetStep(mcbd_obj, x_cov, p_cov, kStepMax);
+    mcbd_obj.set_free_param(0);
+
+    x.subvec(0, lbta - 1) = x_mean;
+    x.subvec(lbta, ltht - 1) = x_cov;
 
     f = mcbd_obj(x);  // Update function value
     p = x - x2;  // Update line direction

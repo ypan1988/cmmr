@@ -145,7 +145,7 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
   if (debug) cat("dim(U)", dim(U), "\n")
   if (debug) cat("dim(V)", dim(V), "\n")
   if (debug) cat("dim(W)", dim(W), "\n")
-  
+
   missStart <- is.null(start)
 
   J <- dim(Y)[2]
@@ -197,14 +197,43 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
 
       chol.D.sqrt[index, index] <- Dt.sqrt
 
-      chol2.C <- t(chol(Dt))
-      chol2.D.sqrt <- diag(diag(chol2.C))
-      chol2.D.elem <- diag(chol2.D.sqrt)^2
-      chol2.T <- chol2.D.sqrt %*% forwardsolve(chol2.C, diag(J))
+      if (cov.method == 'mcd') {
+        chol2.C <- t(chol(Dt))
+        chol2.D.sqrt <- diag(diag(chol2.C))
+        chol2.D.elem <- diag(chol2.D.sqrt)^2
+        chol2.T <- chol2.D.sqrt %*% forwardsolve(chol2.C, diag(J))
 
-      tmp  <- t(chol2.T)
-      Tau   <- rbind(Tau, tmp[upper.tri(tmp)])
-      Delta <- rbind(Delta, log(chol2.D.elem))
+        tmp  <- t(chol2.T)
+        Tau   <- rbind(Tau, tmp[upper.tri(tmp)])
+        Delta <- rbind(Delta, log(chol2.D.elem))
+      } else if (cov.method == 'acd') {
+        chol2.C <- t(chol(Dt))
+        chol2.D.elem <- diag(chol2.C)
+        chol2.L <- diag(chol2.D.elem^(-1)) %*% chol2.C
+
+        tmp  <- t(chol2.L)
+        Tau   <- rbind(Tau, tmp[upper.tri(tmp)])
+        Delta <- rbind(Delta, log(chol2.D.elem^2))
+      } else if (cov.method == 'hpc' ) {
+        drd.H.elem <- sqrt(diag(Dt))
+        Delta <- rbind(Delta, log(drd.H.elem^2))
+
+        drd.R <- diag(chol2.H.elem^(-1)) %*% Dt %*% diag(chol2.H.elem^(-1))
+        B <- t(chol(drd.R))
+        PhiMat <- matrix(0, dim(B)[1], dim(B)[2])
+        for(j in 2:dim(B)[1]) {
+          for(k in 1:(j-1)) {
+            tmp <- 1
+            if (k != 1) {
+              tmp <- prod(sin(PhiMat[j, 1:(k-1)]))
+            } # if
+            PhiMat[j,k] <- acos(B[j, k]/tmp)
+          } # for k
+        } # for j
+        PhiMat
+        tmp  <- t(PhiMat)
+        Tau   <- rbind(Tau, tmp[upper.tri(tmp)])
+      }
     }
 
     mm3 <- kronecker(diag(J*(J-1)/2), V[1:m[1],])
@@ -230,6 +259,7 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     gma0 <- coef(lm.obj2)
 
     start <- c(bta0, gma0, psi0, lmd0)
+    start[is.na(start)] <- 0
     #cat("bta = ", bta0, "\n")
     cat("gma = ", gma0, "\n")
     cat("psi = ", psi0, "\n")
@@ -244,20 +274,20 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     for (j in 1:J) {
       lm.obj <- lm(Y[,j] ~ X - 1)
       mcd.bta0 <- coef(lm.obj)
-      
+
       resid(lm.obj) -> res
       mcd.lmd0 <- coef(lm(log(res^2) ~ W - 1))
       mcd.gma0 <- rep(0, dim(U)[2])
-      
+
       mcd.start <- c(mcd.bta0, mcd.lmd0, mcd.gma0)
-      
+
       est <- jmcm::mcd_estimation(m, Y[,j], X, W, U, mcd.start, Y[,j])
-      
+
       if(debug) cat("est:", str(est))
       bta0 <- c(bta0, est$beta)
       lmd0 <- c(lmd0, est$lambda)
-      
-      
+
+
       index1 <- ((j-1) * dim(U)[2] + 1) : ((j-1) * dim(U)[2] + dim(U)[2])
       index2 <- j:j
       Gamma[index1, index2] <- est$gamma
@@ -265,7 +295,7 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
       # gma0[(idx+1):(idx+dim(U)[2])] = est$gamma
     }
     gma0 <- c(Gamma)
-    
+
     psi0 <- NULL
     for (j in 2:J) {
       for (k in 1:(j-1)) {
@@ -280,7 +310,7 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     if (debug) cat("gma0: ", gma0, gma0, "\n")
     if (debug) cat("psi0: ", psi0, psi0, "\n")
     if (debug) cat("lmd0: ", lmd0, lmd0, "\n")
-    
+
     if (debug) cat("bta0[", length(bta0),"]: ", bta0, "\n")
     if (debug) cat("gma0[", length(gma0),"]: ", gma0, "\n")
     if (debug) cat("psi0[", length(psi0),"]: ", psi0, "\n")
