@@ -201,7 +201,7 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
       
       chol2.C <- t(chol(Dt))
       chol2.D.sqrt <- diag(diag(chol2.C))
-      chol2.D <- chol2.D.sqrt %*% chol2.D.sqrt
+      chol2.D <- chol2.D.sqrt %*% t(chol2.D.sqrt)
       chol2.T <- chol2.D.sqrt %*% forwardsolve(chol2.C, diag(J))
 
       Ttmp  <- t(chol2.T)
@@ -224,10 +224,16 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
         Phi <- rbind(Phi, Ttk) 
       }
     }
+    cat("Phi = ")
+    print(Phi)
     lm.obj2 <- lm(c(Phi) ~ (kronecker(diag(J), U.new[1:dim(Phi)[1],])) - 1)
     gma0 <- coef(lm.obj2)
     
     start <- c(bta0, gma0, psi0, lmd0)
+    #cat("bta = ", bta0, "\n")
+    cat("gma = ", gma0, "\n")
+    cat("psi = ", psi0, "\n")
+    cat("lmd = ", lmd0, "\n")
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
     
   } else if (missStart && !isBalancedData) {
@@ -278,8 +284,8 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
   }
 
   #est <- mcbd_test(m, Y, X, U, V, W, cov.method, start, control$trace)
-  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
-  est
+  #est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
+  #est
 }
 
 
