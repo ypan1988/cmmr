@@ -218,7 +218,7 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
         drd.H.elem <- sqrt(diag(Dt))
         Delta <- rbind(Delta, log(drd.H.elem^2))
 
-        drd.R <- diag(chol2.H.elem^(-1)) %*% Dt %*% diag(chol2.H.elem^(-1))
+        drd.R <- diag(drd.H.elem^(-1)) %*% Dt %*% diag(drd.H.elem^(-1))
         B <- t(chol(drd.R))
         PhiMat <- matrix(0, dim(B)[1], dim(B)[2])
         for(j in 2:dim(B)[1]) {
