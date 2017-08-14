@@ -39,7 +39,6 @@ mcmmr <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
   opt <- do.call(optimizeMcmmr,
                  c(args, cov.method, list(control=control, start=start)))
 
-  opt
 }
 
 #' @title Modular Functions for Covariance Matrices Model Fits
@@ -156,7 +155,7 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
   llmd <- dim(W)[2]       * J
 
   if (!missStart && (lbta+lgma+lpsi+llmd) != length(start))
-    Stop("Incorrect start input")
+    stop("Incorrect start input")
 
   isBalancedData <- all(m == m[1])
   if (missStart && isBalancedData) {
@@ -324,6 +323,28 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
   est
 }
 
+#' @rdname modular
+#' @export
+mkMcmmrMod <- function(opt, args, quad, cov.method, mc)
+{
+  if(missing(mc)) mc <- match.call()
+  
+  isMCD <- (cov.method == "mcd")
+  isACD <- (cov.method == "acd")
+  isHPC <- (cov.method == "hpc")
+  
+  dims <- c(
+    nsub = length(args$m),
+    max.nobs = max(args$m),
+    p = quad[1],
+    q = quad[2],
+    s = quad[3],
+    r = quad[4],
+    MCD = isMCD,
+    ACD = isACD,
+    HPC = isHPC)
+  new("mcmmrMod", call = mc, opt = opt, args = args, quad = quad, devcomp = list(dims = dims))
+}
 
 #' @title Fit Kronecker Product based Covariance Structure Models
 #'
