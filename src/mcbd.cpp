@@ -406,6 +406,21 @@ namespace cmmr {
     return Di_bar_inv;
   }
 
+  arma::mat mcbd::get_D(const arma::uword i, const arma::uword t) const {
+
+    arma::mat Tit_bar = get_T_bar(i, t);
+    arma::mat Tit_bar_inv = Tit_bar.i();
+    arma::mat Dit_bar = get_D_bar(i, t);
+    arma::mat Dit;
+
+    if (mcbd_mode_obj_ == mcbd_mcd) { Dit = Tit_bar_inv * Dit_bar * Tit_bar_inv.t(); }
+    else if (mcbd_mode_obj_ == mcbd_acd || mcbd_mode_obj_ == mcbd_hpc) {
+      Dit = Dit_bar * Tit_bar * Tit_bar.t() * Dit_bar;
+    }
+
+    return Dit;
+  }  
+
   arma::mat mcbd::get_D_inv(const arma::uword i, const arma::uword t) const {
     // int debug = 0;
 
@@ -420,6 +435,23 @@ namespace cmmr {
     }
 
     return Dit_inv;
+  }
+
+  arma::mat mcbd::get_D(const arma::uword i) const {
+    int debug = 0;
+
+    arma::mat Di = arma::zeros<arma::mat>(n_atts_ * m_(i), n_atts_ * m_(i));
+
+    for(arma::uword t = 0; t != m_(i); ++t) {
+      arma::mat Dit = get_D(i, t);
+
+      arma::uword rindex = t * n_atts_;
+      arma::uword cindex = t * n_atts_;
+
+      Di(rindex, cindex, arma::size(Dit)) = Dit;
+    }
+
+    return Di;
   }
 
   arma::mat mcbd::get_D_inv(const arma::uword i) const {
@@ -440,6 +472,26 @@ namespace cmmr {
     if (debug) std::cout << "mcbd::get_D_inv(): after for loop" << std::endl;
 
     return Di_inv;
+  }
+
+  arma::vec mcbd::get_mu ( const arma::uword i ) const {
+    arma::vec mui;
+    if (i == 0) mui = Xbta_.rows(0, n_atts_ * m_(0) - 1);
+    else {
+      int index = n_atts_ * arma::sum(m_.subvec(0, i - 1));
+      mui = Xbta_.rows(index, index + n_atts_ * m_(i) - 1);
+    }
+
+    return mui;
+  }
+
+  arma::mat mcbd::get_Sigma(const arma::uword i) const {
+    arma::mat Ti = get_T(i);
+    arma::mat Ti_inv = Ti.i();
+    arma::mat Di = get_D(i);
+    arma::mat Sigmai = Ti_inv * Di * Ti_inv.t();
+
+    return Sigmai;
   }
 
   arma::mat mcbd::get_Sigma_inv(const arma::uword i) const {

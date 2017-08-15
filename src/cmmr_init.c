@@ -12,7 +12,7 @@ extern SEXP mcbd__get_X(SEXP, SEXP);
 extern SEXP mcbd__get_U(SEXP, SEXP);
 extern SEXP mcbd__get_V(SEXP, SEXP);
 extern SEXP mcbd__get_W(SEXP, SEXP);
-//extern SEXP mcbd__get_D(SEXP, SEXP, SEXP);
+extern SEXP mcbd__get_D(SEXP, SEXP, SEXP);
 extern SEXP mcbd__get_T(SEXP, SEXP, SEXP);
 //extern SEXP mcbd__get_mu(SEXP, SEXP, SEXP);
 //extern SEXP mcbd__get_Sigma(SEXP, SEXP, SEXP);
@@ -20,7 +20,7 @@ extern SEXP mcbd__get_T(SEXP, SEXP, SEXP);
 //extern SEXP mcbd__get_sd(SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
-	  {"cmmr_mcbd_estimation", (DL_FUNC) &cmmr_mcbd_estimation,  9},
+	{"cmmr_mcbd_estimation", (DL_FUNC) &cmmr_mcbd_estimation,  9},
     {"mcbd__new",        (DL_FUNC) &mcbd__new,         7},
     {"mcbd__get_m",      (DL_FUNC) &mcbd__get_m,       2},
     {"mcbd__get_Y",      (DL_FUNC) &mcbd__get_Y,       2},
@@ -28,7 +28,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"mcbd__get_U",      (DL_FUNC) &mcbd__get_U,       2},
     {"mcbd__get_V",      (DL_FUNC) &mcbd__get_V,       2},
     {"mcbd__get_W",      (DL_FUNC) &mcbd__get_W,       2},
-    //{"mcbd__get_D",      (DL_FUNC) &mcbd__get_D,       3},
+    {"mcbd__get_D",      (DL_FUNC) &mcbd__get_D,       3},
     {"mcbd__get_T",      (DL_FUNC) &mcbd__get_T,       3},
     //{"mcbd__get_mu",     (DL_FUNC) &mcbd__get_mu,      3},
     //{"mcbd__get_Sigma",  (DL_FUNC) &mcbd__get_Sigma,   3},

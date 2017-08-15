@@ -1,3 +1,24 @@
+#' Poplar Growth Data
+#'
+#' The attribute data are measurements of stem height and stem diameter for 78 
+#' poplar (genus Populus) trees over time. Measurements were taken at the end of
+#' each year, for 11 years. Thus we have N = 78, T = 11, and J = 2. 
+#' No covariates, apart from time itself, were measured
+#'
+#' \itemize{
+#'   \item id: subject id
+#'   \item year: measurement time
+#'   \item height: stem height for poplar tree
+#'   \item diameter: stem diameter for poplar tree
+#' }
+#'
+#' @docType data
+#' @keywords datasets
+#' @name poplar
+#' @usage data(poplar)
+#' @format A data frame with 660 rows and 4 variables
+NULL
+
 #' @title Fit MCBD-based Covariance Matrices Models
 #'
 #' @description Fit a modified Cholesky block decomposition (MCBD) based

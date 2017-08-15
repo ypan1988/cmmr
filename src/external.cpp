@@ -295,16 +295,16 @@ RcppExport SEXP mcbd__get_W(SEXP xp, SEXP i_) {
   return Rcpp::wrap(ptr->get_W(i));
 }
 
-// RcppExport SEXP gee_jmcm__get_D(SEXP xp, SEXP x_, SEXP i_) {
-//   Rcpp::XPtr<gee::gee_jmcm> ptr(xp);
-//   
-//   arma::vec x = Rcpp::as<arma::vec>(x_);
-//   int i = Rcpp::as<int>(i_) - 1;
-//   
-//   ptr->UpdateGEES(x);
-//   
-//   return Rcpp::wrap(ptr->get_D(i));
-// }
+RcppExport SEXP mcbd__get_D(SEXP xp, SEXP x_, SEXP i_) {
+  Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+  
+  arma::vec x = Rcpp::as<arma::vec>(x_);
+  int i = Rcpp::as<int>(i_) - 1;
+  
+  ptr->UpdateMcbd(x);
+  
+  return Rcpp::wrap(ptr->get_D(i));
+}
 
 RcppExport SEXP mcbd__get_T(SEXP xp, SEXP x_, SEXP i_) {
   Rcpp::XPtr<cmmr::mcbd> ptr(xp);
