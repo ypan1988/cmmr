@@ -1,6 +1,6 @@
 Package: cmmr
 Type: Package
-Title: Covariance Matrices Modelling for Longitudinal Data with Multiple Responses using 'Armadillo' and S4
+Title: modelling of Covariance Matrices for longitudinal data with Multiple Responses using 'Armadillo' and S4
 Version: 0.1.1.0
 Authors@R: c(person("Yi", "Pan", email = "ypan1988@gmail.com",
                   role = c("aut", "cre")),

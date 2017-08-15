@@ -229,3 +229,134 @@ Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::
   return Rcpp::List::create( Rcpp::Named("par") = start,
                              Rcpp::Named("npars") = npars);
 }
+
+
+RcppExport SEXP mcbd__new(SEXP m_, SEXP Y_, SEXP X_, SEXP U_, SEXP V_, SEXP W_,
+                          SEXP cov_method_) {
+  arma::uvec m = Rcpp::as<arma::uvec>(m_);
+  arma::vec Y = Rcpp::as<arma::vec>(Y_);
+  arma::mat X = Rcpp::as<arma::mat>(X_);
+  arma::mat U = Rcpp::as<arma::mat>(U_);
+  arma::mat V = Rcpp::as<arma::mat>(V_);
+  arma::mat W = Rcpp::as<arma::mat>(W_);
+  
+  std::string cov_method = Rcpp::as<std::string>(cov_method_);
+
+  mcbd_mode cov_obj(0);
+  if(cov_method == "mcd") cov_obj.setid(1);
+  if(cov_method == "acd") cov_obj.setid(2);
+  if(cov_method == "hpc") cov_obj.setid(3);
+  
+  Rcpp::XPtr<cmmr::mcbd>
+    ptr(new cmmr::mcbd(m, Y, X, U, V, W, cov_obj), true);
+
+  return ptr;
+}
+
+RcppExport SEXP mcbd__get_m(SEXP xp, SEXP i_) {
+  Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+  int i = Rcpp::as<int>(i_) - 1;
+  
+  return Rcpp::wrap(ptr->get_m(i));
+}
+
+RcppExport SEXP mcbd__get_Y(SEXP xp, SEXP i_) {
+  Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+  int i = Rcpp::as<int>(i_) - 1;
+  
+  return Rcpp::wrap(ptr->get_Y(i));
+}
+
+RcppExport SEXP mcbd__get_X(SEXP xp, SEXP i_) {
+  Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+  int i = Rcpp::as<int>(i_) - 1;
+  
+  return Rcpp::wrap(ptr->get_X(i));
+}
+
+RcppExport SEXP mcbd__get_U(SEXP xp, SEXP i_) {
+  Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+  int i = Rcpp::as<int>(i_) - 1;
+  
+  return Rcpp::wrap(ptr->get_U(i));
+}
+
+RcppExport SEXP mcbd__get_V(SEXP xp, SEXP i_) {
+  Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+  int i = Rcpp::as<int>(i_) - 1;
+  
+  return Rcpp::wrap(ptr->get_V(i));
+}
+
+RcppExport SEXP mcbd__get_W(SEXP xp, SEXP i_) {
+  Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+  int i = Rcpp::as<int>(i_) - 1;
+  
+  return Rcpp::wrap(ptr->get_W(i));
+}
+
+// RcppExport SEXP gee_jmcm__get_D(SEXP xp, SEXP x_, SEXP i_) {
+//   Rcpp::XPtr<gee::gee_jmcm> ptr(xp);
+//   
+//   arma::vec x = Rcpp::as<arma::vec>(x_);
+//   int i = Rcpp::as<int>(i_) - 1;
+//   
+//   ptr->UpdateGEES(x);
+//   
+//   return Rcpp::wrap(ptr->get_D(i));
+// }
+
+RcppExport SEXP mcbd__get_T(SEXP xp, SEXP x_, SEXP i_) {
+  Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+  
+  arma::vec x = Rcpp::as<arma::vec>(x_);
+  int i = Rcpp::as<int>(i_) - 1;
+  
+  ptr->UpdateMcbd(x);
+  
+  return Rcpp::wrap(ptr->get_T(i));
+}
+
+// RcppExport SEXP mcbd__get_mu(SEXP xp, SEXP x_, SEXP i_) {
+//   Rcpp::XPtr<cmmr::mcbd> ptr(xp);
+//   
+//   arma::vec x = Rcpp::as<arma::vec>(x_);
+//   int i = Rcpp::as<int>(i_) - 1;
+//   
+//   ptr->UpdateMcbd(x);
+//   
+//   return Rcpp::wrap(ptr->get_mu(i));
+// }
+
+// RcppExport SEXP gee_jmcm__get_Sigma(SEXP xp, SEXP x_, SEXP i_) {
+//   Rcpp::XPtr<gee::gee_jmcm> ptr(xp);
+//   
+//   arma::vec x = Rcpp::as<arma::vec>(x_);
+//   int i = Rcpp::as<int>(i_) - 1;
+//   
+//   arma::mat Sigmai;
+//   
+//   ptr->UpdateGEES(x);
+//   
+//   return Rcpp::wrap(ptr->get_Sigma(i));
+// }
+
+// RcppExport SEXP gee_jmcm__get_fim(SEXP xp, SEXP x_) {
+//   Rcpp::XPtr<gee::gee_jmcm> ptr(xp);
+//   
+//   arma::vec x = Rcpp::as<arma::vec>(x_);
+//   
+//   ptr->UpdateGEES(x);
+//   
+//   return Rcpp::wrap(ptr->get_fim());
+// }
+// 
+// RcppExport SEXP gee_jmcm__get_sd(SEXP xp, SEXP x_) {
+//   Rcpp::XPtr<gee::gee_jmcm> ptr(xp);
+//   
+//   arma::vec x = Rcpp::as<arma::vec>(x_);
+//   
+//   ptr->UpdateGEES(x);
+//   
+//   return Rcpp::wrap(ptr->get_sd());
+// }

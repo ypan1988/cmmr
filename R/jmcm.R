@@ -8,15 +8,15 @@
 #' @param cov.method covariance structure modelling method for matrix Dt,
 #'  choose 'mcd' (Pourahmadi, 1999), 'acd' (Chen and Dunson, 2013) or 'hpc'
 #'  (Zhang et al. 2015).
-#' @param control a list (of correct class, resulting from mcmmrControl())
-#'  containing control parameters, see the *mcmmrControl documentation for
+#' @param control a list (of correct class, resulting from jmcmControl())
+#'  containing control parameters, see the *jmcmControl documentation for
 #'  details.
 #' @param start starting values for the parameters in the model.
 #'
 #' @examples
-mcmmr <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
-                  cov.method = c('mcd', 'acd', 'hpc'),
-                  control = mcmmrControl(), start = NULL)
+jmcm.mcbd <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
+                      cov.method = c('mcd', 'acd', 'hpc'),
+                      control = jmcmControl(), start = NULL)
 {
   mc <- mcout <- match.call()
 
@@ -24,21 +24,22 @@ mcmmr <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
     stop("cov.method must be specified")
 
   missCtrl <- missing(control)
-  if (!missCtrl && !inherits(control, "mcmmrControl"))
+  if (!missCtrl && !inherits(control, "jmcmControl"))
   {
     if(!is.list(control))
-      stop("'control' is not a list; use mcmmrControl()")
+      stop("'control' is not a list; use jmcmControl()")
 
-    warning("please use mcmmrControl() instead", immediate. = TRUE)
-    control <- do.call(mcmmrControl, control)
+    warning("please use jmcmControl() instead", immediate. = TRUE)
+    control <- do.call(jmcmControl, control)
   }
 
   mc[[1]] <- quote(cmmr::mldFormula)
   args <- eval(mc, parent.frame(1L))
 
-  opt <- do.call(optimizeMcmmr,
+  opt <- do.call(optimizeMcbd,
                  c(args, cov.method, list(control=control, start=start)))
 
+  mkMcbdMod(opt=opt, args=args, quad=quad, cov.method=cov.method,mc=mcout)
 }
 
 #' @title Modular Functions for Covariance Matrices Model Fits
@@ -135,10 +136,10 @@ mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
 
 #' @rdname modular
 #' @export
-optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
+optimizeMcbd <- function(m, Y, X, U, V, W, time, cov.method, control, start)
 {
   debug <- 0
-  if (debug) cat("optimizeMcmmr():\n")
+  if (debug) cat("optimizeMcbd():\n")
   if (debug) cat("dim(Y)", dim(Y), "\n")
   if (debug) cat("dim(X)", dim(X), "\n")
   if (debug) cat("dim(U)", dim(U), "\n")
@@ -325,7 +326,7 @@ optimizeMcmmr <- function(m, Y, X, U, V, W, time, cov.method, control, start)
 
 #' @rdname modular
 #' @export
-mkMcmmrMod <- function(opt, args, quad, cov.method, mc)
+mkMcbdMod <- function(opt, args, quad, cov.method, mc)
 {
   if(missing(mc)) mc <- match.call()
   
@@ -343,7 +344,7 @@ mkMcmmrMod <- function(opt, args, quad, cov.method, mc)
     MCD = isMCD,
     ACD = isACD,
     HPC = isHPC)
-  new("mcmmrMod", call = mc, opt = opt, args = args, quad = quad, devcomp = list(dims = dims))
+  new("mcbdMod", call = mc, opt = opt, args = args, quad = quad, devcomp = list(dims = dims))
 }
 
 #' @title Fit Kronecker Product based Covariance Structure Models
@@ -361,10 +362,10 @@ mkMcmmrMod <- function(opt, args, quad, cov.method, mc)
 #' (Zhang et al. 2015).
 #' @param start starting values for the parameters in the model.
 #' @export
-kcmmr <- function(formula, data = NULL,
-                  bcov.method = c('mcd', 'acd', 'hpc'),
-                  wcov.method = c('mcd', 'acd', 'hpc'),
-                  control = kcmmrControl(), start = NULL)
+jmcm.kron <- function(formula, data = NULL,
+                      bcov.method = c('mcd', 'acd', 'hpc'),
+                      wcov.method = c('mcd', 'acd', 'hpc'),
+                      control = jmcmControl(), start = NULL)
 {
   mc <- mcout <- match.call()
 
@@ -374,3 +375,86 @@ kcmmr <- function(formula, data = NULL,
     stop("wcov.method must be specified")
 
 }
+
+###----- Printing etc ----------------------------
+methodTitle <- function(object, dims = object@devcomp$dims)
+{
+  MCD <- dims[["MCD"]]
+  ACD <- dims[["ACD"]]
+  HPC <- dims[["HPC"]]
+  kind <- switch(MCD * 1L + ACD * 2L + HPC * 3L, "MCD", "ACD", "HPC")
+  paste("Joint mean-covariance model based on MCBD -", kind)
+}
+
+cat.f <- function(...) cat(..., fill = TRUE)
+
+.prt.methTit <- function(mtit, class) {
+  cat(sprintf("%s ['%s']\n", mtit, class))
+}
+
+.prt.call <- function(call, long = TRUE) {
+  if (!is.null(cc <- call$formula))
+    cat.f("Formula:", deparse(cc))
+  if (!is.null(cc <- call$quad))
+    cat.f("   quad:", deparse(cc))
+  if (!is.null(cc <- call$data))
+    cat.f("   Data:", deparse(cc))
+}
+
+.prt.loglik <- function(n2ll, digits=4)
+{
+  t.4 <- round(n2ll, digits)
+  cat.f("logLik:", t.4)
+}
+
+.prt.bic <- function(bic, digits=4)
+{
+  t.4 <- round(bic, digits)
+  cat.f("   BIC:", t.4)
+}
+
+print.mcbdMod <- function(x, digits=4, ...)
+{
+  dims <- x@devcomp$dims
+  .prt.methTit(methodTitle(x, dims = dims), class(x))
+  .prt.call(x@call); cat("\n")
+  .prt.loglik(x@opt$loglik)
+  .prt.bic(x@opt$BIC); cat("\n")
+  
+  cat("Mean Parameters:\n")
+  print.default(format(drop(x@opt$beta), digits = digits),
+                print.gap = 2L, quote = FALSE)
+
+  cat("\n-----T_itk-----\n")
+  cat("Autoregressive Parameters:\n")
+  print.default(format(drop(x@opt$gamma), digits = digits),
+                print.gap = 2L, quote = FALSE)
+  
+  cat("\n-----D_it -----\n")
+  
+  if(dims["MCD"] == 1)
+    cat("Autoregressive Parameters:\n")
+  else if(dims["ACD"] == 1)
+    cat("Moving Average Parameters:\n")
+  else if(dims["HPC"] == 1)
+    cat("Angle Parameters:\n")
+  print.default(format(drop(x@opt$psi), digits = digits),
+                print.gap = 2L, quote = FALSE)
+  
+  if(dims["MCD"] == 1 || dims["ACD"] == 1)
+    cat("Innovation Variance Parameters:\n")
+  else if(dims["HPC"] == 1)
+    cat("Variance Parameters:\n")
+  print.default(format(drop(x@opt$lambda), digits = digits),
+                print.gap = 2L, quote = FALSE)
+  
+  invisible(x)
+}
+
+#' Print information for mcbdMod-class
+#'
+#' @param object a fitted joint mean covariance model of class "mcbdMod", i.e.,
+#' typically the result of jmcm.mcbd().
+#'
+#' @exportMethod show
+setMethod("show", "mcbdMod", function(object) print.mcbdMod(object))
