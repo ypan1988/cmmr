@@ -29,6 +29,7 @@ getJMCM.mcbdMod <- function(object,
   if (devcomp$dims['HPC']) CovMethod = "hpc"
   
   obj <- .Call("mcbd__new", m, Y, X, U, V, W, CovMethod)
+  
   if(sub.num == 0) {
     switch(name,
            "m" = args$m,
@@ -36,7 +37,15 @@ getJMCM.mcbdMod <- function(object,
            "X" = args$X,
            "U" = args$U,
            "V" = args$V,
-           "W" = args$W)
+           "W" = args$W,
+           "theta"  = drop(opt$par),
+           "beta"   = drop(opt$beta),
+           "gamma"  = drop(opt$gamma),
+           "psi"    = drop(opt$psi),
+           "lambda" = drop(opt$lambda),
+           "loglik" = opt$loglik,
+           "BIC"    = opt$BIC,
+           "iter"   = opt$iter)
   } else {
     if (sub.num == 1) vindex = 1
     else vindex = sum(m[1:(sub.num-1)]) + 1
@@ -46,7 +55,11 @@ getJMCM.mcbdMod <- function(object,
            "X"     = .Call("mcbd__get_X",     obj, sub.num),
            "U"     = .Call("mcbd__get_U",     obj, sub.num),
            "V"     = .Call("mcbd__get_V",     obj, sub.num),
-           "W"     = .Call("mcbd__get_W",     obj, sub.num))
+           "W"     = .Call("mcbd__get_W",     obj, sub.num),
+           "T"     = .Call("mcbd__get_T",     obj, theta, sub.num),
+           "D"     = .Call("mcbd__get_D",     obj, theta, sub.num),
+           "mu"    = .Call("mcbd__get_mu",    obj, theta, sub.num),
+           "Sigma" = .Call("mcbd__get_Sigma", obj, theta, sub.num))
   }
-           
+  
 }
