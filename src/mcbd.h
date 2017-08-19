@@ -11,6 +11,7 @@
 #ifndef CMMR_MCBD_H_
 #define CMMR_MCBD_H_
 
+#define ARMA_DONT_PRINT_ERRORS
 #include <RcppArmadillo.h>
 
 struct mcbd_mode {
@@ -131,13 +132,14 @@ namespace cmmr
 
     arma::mat get_T_bar(const arma::uword i, const arma::uword t) const;
     arma::mat get_T_bar(const arma::uword i) const;
+    arma::mat get_T_bar_inv(const arma::uword i, const arma::uword t) const;
     arma::mat get_T_bar_inv(const arma::uword i) const;
 
     arma::mat get_D_bar(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_bar_inv(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_bar_inv(const arma::uword i) const;
 
-    arma::mat get_D(const arma::uword i, const arma::uword t) const;    
+    arma::mat get_D(const arma::uword i, const arma::uword t) const;
     arma::mat get_D_inv(const arma::uword i, const arma::uword t) const;
     arma::mat get_D(const arma::uword i) const;
     arma::mat get_D_inv(const arma::uword i) const;

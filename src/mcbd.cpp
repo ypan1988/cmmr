@@ -351,11 +351,19 @@ namespace cmmr {
     return Ti_bar;
   }
 
+  arma::mat mcbd::get_T_bar_inv(const arma::uword i, const arma::uword t) const {
+    arma::mat Tit_bar = get_T_bar(i, t);
+    arma::mat Tit_bar_inv;
+    if (!arma::inv(Tit_bar_inv, Tit_bar)) Tit_bar_inv = arma::pinv(Tit_bar);
+    return Tit_bar_inv;
+  }
+
   arma::mat mcbd::get_T_bar_inv(const arma::uword i) const {
     arma::mat Ti_bar_inv = arma::zeros<arma::mat>(n_atts_ * m_(i), n_atts_ * m_(i));
 
     for(arma::uword t = 0; t != m_(i); ++t) {
-      arma::mat Tit_bar_inv = get_T_bar(i, t).i();
+      //arma::mat Tit_bar_inv = get_T_bar(i, t).i();
+      arma::mat Tit_bar_inv = get_T_bar_inv(i, t);
 
       arma::uword rindex = t * n_atts_;
       arma::uword cindex = t * n_atts_;
@@ -409,7 +417,7 @@ namespace cmmr {
   arma::mat mcbd::get_D(const arma::uword i, const arma::uword t) const {
 
     arma::mat Tit_bar = get_T_bar(i, t);
-    arma::mat Tit_bar_inv = Tit_bar.i();
+    arma::mat Tit_bar_inv = get_T_bar_inv(i, t);
     arma::mat Dit_bar = get_D_bar(i, t);
     arma::mat Dit;
 
@@ -419,7 +427,7 @@ namespace cmmr {
     }
 
     return Dit;
-  }  
+  }
 
   arma::mat mcbd::get_D_inv(const arma::uword i, const arma::uword t) const {
     // int debug = 0;
@@ -430,7 +438,8 @@ namespace cmmr {
 
     if (mcbd_mode_obj_ == mcbd_mcd) { Dit_inv = Tit_bar.t() * Dit_bar_inv * Tit_bar; }
     else if (mcbd_mode_obj_ == mcbd_acd || mcbd_mode_obj_ == mcbd_hpc) {
-      arma::mat Tit_bar_inv = Tit_bar.i();
+      // arma::mat Tit_bar_inv = Tit_bar.i();
+      arma::mat Tit_bar_inv = get_T_bar_inv(i, t);
       Dit_inv = Dit_bar_inv * Tit_bar_inv.t() * Tit_bar_inv * Dit_bar_inv;
     }
 
@@ -487,7 +496,10 @@ namespace cmmr {
 
   arma::mat mcbd::get_Sigma(const arma::uword i) const {
     arma::mat Ti = get_T(i);
-    arma::mat Ti_inv = Ti.i();
+    //arma::mat Ti_inv = Ti.i();
+    arma::mat Ti_inv;
+    if(!arma::inv(Ti_inv, Ti)) Ti_inv = arma::pinv(Ti);
+
     arma::mat Di = get_D(i);
     arma::mat Sigmai = Ti_inv * Di * Ti_inv.t();
 
@@ -647,7 +659,11 @@ namespace cmmr {
       XSY += Xi.t() * Sigmai_inv * Yi;
     }
 
-    arma::vec beta = XSX.i() * XSY;
+    arma::mat XSX_inv;
+    if (!arma::inv(XSX_inv, XSX)) XSX_inv = arma::pinv(XSX);
+
+    // arma::vec beta = XSX.i() * XSY;
+    arma::vec beta = XSX_inv * XSY;
     set_beta(beta);
   }
 
@@ -833,7 +849,8 @@ namespace cmmr {
           arma::vec epsit = epsi.subvec(index, index + n_atts_ - 1);
           arma::vec xi_it = TDTr.subvec(index, index + n_atts_ - 1);
 
-          arma::mat Tit_bar_inv = get_T_bar(i, t).i();
+          //arma::mat Tit_bar_inv = get_T_bar(i, t).i();
+	  arma::mat Tit_bar_inv = get_T_bar_inv(i, t);
           arma::mat Tit_bar_trans_deriv = acd_CalcTransTbarDeriv(i, t);
 
           grad_psi += arma::kron(xi_it.t(), arma::eye(lpsi, lpsi)) * Tit_bar_trans_deriv
@@ -868,7 +885,8 @@ namespace cmmr {
           arma::vec xi_it = TDTr.subvec(index, index + n_atts_ - 1);
 
           arma::mat Tit_bar = get_T_bar(i, t);
-          arma::mat Tit_bar_inv = Tit_bar.i();
+          //arma::mat Tit_bar_inv = Tit_bar.i();
+	  arma::mat Tit_bar_inv = get_T_bar_inv(i, t);
           arma::mat Tit_bar_trans_deriv = hpc_CalcTransTbarDeriv(i, t);
 
           for (arma::uword j = 0; j != n_atts_; ++j) {
