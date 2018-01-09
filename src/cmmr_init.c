@@ -4,7 +4,7 @@
 #include <R_ext/Rdynload.h>
 
 /* .Call calls */
-extern SEXP cmmr_mcbd_estimation(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _cmmr_mcbd_estimation(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP mcbd__new(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP mcbd__get_m(SEXP, SEXP);
 extern SEXP mcbd__get_Y(SEXP, SEXP);
@@ -20,7 +20,7 @@ extern SEXP mcbd__get_Sigma(SEXP, SEXP, SEXP);
 //extern SEXP mcbd__get_sd(SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
-	{"cmmr_mcbd_estimation", (DL_FUNC) &cmmr_mcbd_estimation,  9},
+	{"_cmmr_mcbd_estimation", (DL_FUNC) &_cmmr_mcbd_estimation,  9},
     {"mcbd__new",        (DL_FUNC) &mcbd__new,         7},
     {"mcbd__get_m",      (DL_FUNC) &mcbd__get_m,       2},
     {"mcbd__get_Y",      (DL_FUNC) &mcbd__get_Y,       2},
