@@ -1,3 +1,6 @@
+#include <iostream>
+using std::cout;
+
 #include <RcppArmadillo.h>
 #include <cmath>
 
@@ -7,7 +10,8 @@
 //'@export
 // [[Rcpp::export]]
 Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::mat V, arma::mat W,
-                           std::string cov_method, arma::vec start, bool trace = false)
+                           std::string cov_method, arma::vec start, arma::vec mean, 
+                           bool trace = false, bool covonly = false)
 {
   int debug = 0;
   
@@ -34,7 +38,10 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
   if(cov_method == "hpc") cov_obj.setid(3);
   
   cmmr::mcbd mcbd_obj(m, Y, X, U, V, W, cov_obj);
-  
+  if (covonly) {
+    mcbd_obj.set_mean(mean);
+  }
+
   pan::BFGS<cmmr::mcbd> bfgs;
   bfgs.set_trace(trace);
   // bfgs.set_message(errormsg);
@@ -131,7 +138,7 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, 
     }
     
     if (debug) Rcpp::Rcout << "Update beta..." << std::endl;
-    mcbd_obj.UpdateBeta();
+    if (!covonly) mcbd_obj.UpdateBeta();
     
     if (debug) Rcpp::Rcout << "Update gamma, psi, lambda..." << std::endl;
     arma::vec tht2 = x.rows(lbta, lbta + ltht2 - 1);
@@ -213,12 +220,14 @@ Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::
   if (debug) std::cout << "mcbd_test(): creating mcbd object..." << std::endl;
   cmmr::mcbd mcbd_obj(m, Y, X, U, V, W, cov_obj);
   
-  mcbd_obj.get_T_bar(2,0).print("T31 = ");
-  mcbd_obj.get_T_bar(2,2).print("T33 = ");
-  
+  cout << "\nlbta = " << mcbd_obj.get_beta().size();
+  cout << "\nlgma = " << mcbd_obj.get_gamma().size();
+  cout << "\nlpsi = " << mcbd_obj.get_psi().size();
+  cout << "\nllmd = " << mcbd_obj.get_lambda().size();
+    
   arma::vec grad1;
   grad1 = mcbd_obj.CalcDeriv(start);
-  grad1.t().print("grad1 = ");
+  grad1.t().print("\ngrad1 = ");
   
   arma::vec grad2;
   mcbd_obj.Gradient(start, grad2);

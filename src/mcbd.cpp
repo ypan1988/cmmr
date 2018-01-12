@@ -7,15 +7,11 @@ namespace cmmr {
   mcbd::mcbd (const arma::uvec &m, const arma::mat &Y, const arma::mat &X,
               const arma::mat &U, const arma::mat &V, const arma::mat &W,
               const mcbd_mode &mcbd_mode_obj) :
-    n_atts_(Y.n_cols), n_subs_(m.n_elem), m_(m), V_(V), W_(W),
+    n_atts_(Y.n_cols), n_subs_(m.n_elem),
+    m_(m), V_(V), W_(W),
     mcbd_mode_obj_(mcbd_mode_obj)
   {
     int debug = 0;
-
-    if (debug) {
-      std::cout << "n_atts_ = " << n_atts_ << std::endl
-                << "n_subs_ = " << n_subs_ << std::endl;
-    }
 
     poly_ = arma::zeros<arma::uvec>(4);
     poly_(0) = X.n_cols;
@@ -27,6 +23,7 @@ namespace cmmr {
 
     // initialize Y_
     Y_ = arma::vectorise(Y.t());
+    cov_only_ = false; mean_ = Y_;
 
     // initialize X_
     for(arma::uword idx = 0; idx != X.n_rows; ++idx)
@@ -45,10 +42,6 @@ namespace cmmr {
     llmd = poly_(3)             * n_atts_;
     ltht = lbta + lgma + lpsi + llmd;
 
-    if (debug) {
-      std::cout << "mcbd::mcbd(): before UpdateMcbd()" <<  std::endl;
-    }
-
     arma::vec x = arma::zeros<arma::vec>(ltht);
 
     if (mcbd_mode_obj_ == mcbd_hpc) {
@@ -63,12 +56,6 @@ namespace cmmr {
     }
 
     UpdateMcbd(x);
-
-    if (debug) {
-      std::cout << "mcbd::mcbd(): after UpdateMcbd()" <<  std::endl;
-    }
-
-    if (debug) std::cout << "mcbd obj created..." << std::endl;
   }
 
   arma::uword mcbd::get_m(const arma::uword i) const { return m_(i); }
@@ -584,7 +571,9 @@ namespace cmmr {
 
       if (debug) std::cout << "UpdateModel: Update common parts" << std::endl;
 
-      Xbta_ = X_ * bta_;
+      if (cov_only_) Xbta_ = mean_;
+      else Xbta_ = X_ * bta_;
+      
       UGma_ = U_ * Gma_;
       VPsi_ = V_ * Psi_;
       WLmd_ = W_ * Lmd_;
@@ -607,7 +596,9 @@ namespace cmmr {
       break;
 
     case 1:
-      Xbta_ = X_ * bta_;
+      if (cov_only_) Xbta_ = mean_;
+      else Xbta_ = X_ * bta_;
+      
       Resid_ = Y_ - Xbta_;
 
       if (mcbd_mode_obj_ == mcbd_mcd) {
@@ -659,11 +650,12 @@ namespace cmmr {
       XSY += Xi.t() * Sigmai_inv * Yi;
     }
 
-    arma::mat XSX_inv;
-    if (!arma::inv(XSX_inv, XSX)) XSX_inv = arma::pinv(XSX);
+    // arma::mat XSX_inv;
+    // if (!arma::inv(XSX_inv, XSX)) XSX_inv = arma::pinv(XSX);
+    // arma::vec beta = XSX_inv * XSY;
+    
+    arma::vec beta = XSX.i() * XSY;
 
-    // arma::vec beta = XSX.i() * XSY;
-    arma::vec beta = XSX_inv * XSY;
     set_beta(beta);
   }
 
@@ -909,9 +901,6 @@ namespace cmmr {
     grad2 = -2 * dragonwell::join_vecs({grad_gma, grad_psi, grad_lmd});
 
 
-  }
-
-  void mcbd::Optimize(const arma::vec &start) {
   }
 
   arma::mat mcbd::get_C(const arma::uword i, const arma::uword t) const {

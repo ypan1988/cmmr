@@ -9,6 +9,9 @@ jmcm.mcbd(formula, data = NULL, quad = c(3, 3, 3, 3),
   start = NULL)
 }
 \arguments{
+\item{formula}{a two-sided linear formula object describing the covariates
+for both the mean and covariance matrix part of the model.}
+
 \item{data}{a data frame containing the variables named in formula.}
 
 \item{cov.method}{covariance structure modelling method for matrix Dt,
@@ -24,4 +27,8 @@ details.}
 \description{
 Fit a modified Cholesky block decomposition (MCBD) based
  covariance matrices Models to longitudinal data with multiple responses.
+}
+\examples{
+fit <- jmcm.mcbd(height + diameter | id | time ~ 1 | 1 | 1, data = poplar,
+quad = c(10,1,1,1), cov.method = "mcd", control = jmcmControl(trace = TRUE))
 }

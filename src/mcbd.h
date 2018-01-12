@@ -74,6 +74,9 @@ namespace cmmr
     arma::mat X_, U_, V_, W_;
 
     arma::uword free_param_;
+    bool cov_only_;
+    arma::vec mean_;
+    
     arma::vec tht_, bta_, gma_, psi_, lmd_;
     arma::mat Gma_, Psi_, Lmd_;
 
@@ -122,7 +125,7 @@ namespace cmmr
     void set_free_param(const arma::uword n) { free_param_ = n; }
     void set_theta(const arma::vec &x);
     void set_beta(const arma::vec &x);
-    void set_theta2(const arma::vec &x);
+    void set_theta2(const arma::vec &x);  // gma + psi + lmd
     /* void set_gamma(const arma::vec &x); */
     /* void set_psi(const arma::vec &x); */
     /* void set_lambda(const arma::vec &x); */
@@ -159,9 +162,12 @@ namespace cmmr
     void UpdateModel();
 
     void UpdateBeta();
-    //void UpdateGamma();
     void UpdateTheta2(const arma::vec &x);
-    void Optimize(const arma::vec &start);
+    
+    void set_mean(const arma::vec& mean) {
+      cov_only_ = true;
+      mean_ = mean;
+    }
 
   private:
     arma::mat get_C(const arma::uword i, const arma::uword t) const;

@@ -24,7 +24,8 @@ NULL
 #' @description Fit a modified Cholesky block decomposition (MCBD) based
 #'  covariance matrices Models to longitudinal data with multiple responses.
 #'
-#' @param formula
+#' @param formula a two-sided linear formula object describing the covariates
+#' for both the mean and covariance matrix part of the model.
 #' @param data a data frame containing the variables named in formula.
 #' @param cov.method covariance structure modelling method for matrix Dt,
 #'  choose 'mcd' (Pourahmadi, 1999), 'acd' (Chen and Dunson, 2013) or 'hpc'
@@ -34,11 +35,14 @@ NULL
 #'  details.
 #' @param start starting values for the parameters in the model.
 #'
-#' @examples
+#' @examples fit <- jmcm.mcbd(height + diameter | id | time ~ 1 | 1 | 1, data = poplar,
+#' quad = c(10,6,7,2), cov.method = "mcd", control = jmcmControl(trace = TRUE))
+
 jmcm.mcbd <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
                       cov.method = c('mcd', 'acd', 'hpc'),
                       control = jmcmControl(), start = NULL)
 {
+  debug = 1
   mc <- mcout <- match.call()
 
   if (missing(cov.method))
@@ -340,8 +344,9 @@ optimizeMcbd <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
   }
 
-  #est <- mcbd_test(m, Y, X, U, V, W, cov.method, start, control$trace)
-  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, control$trace)
+  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, c(t(Y)), control$trace)
+  if(debug) mcbd_test(m, Y, X, U, V, W, cov.method, est$par)
+  
   est
 }
 
