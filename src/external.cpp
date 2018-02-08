@@ -195,7 +195,7 @@ Rcpp::List mcbd_test(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U, arma::
 {
   int debug = 1;
   
-  arma::uword n_subs = m.n_elem;
+  // arma::uword n_subs = m.n_elem;
   arma::uword n_atts = Y.n_cols;
   
   arma::uvec poly = arma::zeros<arma::uvec>(4);

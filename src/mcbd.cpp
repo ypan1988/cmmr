@@ -11,8 +11,6 @@ namespace cmmr {
     m_(m), V_(V), W_(W),
     mcbd_mode_obj_(mcbd_mode_obj)
   {
-    int debug = 0;
-
     poly_ = arma::zeros<arma::uvec>(4);
     poly_(0) = X.n_cols;
     poly_(1) = U.n_cols;
@@ -434,8 +432,6 @@ namespace cmmr {
   }
 
   arma::mat mcbd::get_D(const arma::uword i) const {
-    int debug = 0;
-
     arma::mat Di = arma::zeros<arma::mat>(n_atts_ * m_(i), n_atts_ * m_(i));
 
     for(arma::uword t = 0; t != m_(i); ++t) {
