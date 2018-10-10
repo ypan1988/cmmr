@@ -279,23 +279,17 @@ optimizeMcbd <- function(m, Y, X, U, V, W, time, cov.method, control, start)
       }
     }
     mm2 <- kronecker(diag(J), U.new[1:dim(Phi)[1],])
-    cat("dim(Phi) = ", dim(Phi), "\n")
     lm.obj2 <- lm(c(Phi) ~ mm2 - 1)
     gma0 <- coef(lm.obj2)
 
     start <- c(bta0, gma0, psi0, lmd0)
     start[is.na(start)] <- 0
-    #cat("bta = ", bta0, "\n")
-    cat("gma = ", gma0, "\n")
-    cat("psi = ", psi0, "\n")
-    cat("lmd = ", lmd0, "\n")
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
 
   } else if (missStart && !isBalancedData) {
     bta0 <- NULL
     lmd0 <- NULL
     Gamma <- matrix(0, (J * dim(U)[2]), J)
-    #gma0 <- rep(0, lgma)
     for (j in 1:J) {
       lm.obj <- lm(Y[,j] ~ X - 1)
       mcd.bta0 <- coef(lm.obj)
@@ -329,24 +323,11 @@ optimizeMcbd <- function(m, Y, X, U, V, W, time, cov.method, control, start)
         psi0 <- c(psi0, tmp)
       }
     }
-#        psi0 <- rep(0, lpsi)
-
-    if (debug) cat("bta0: ", bta0, bta0, "\n")
-    if (debug) cat("gma0: ", gma0, gma0, "\n")
-    if (debug) cat("psi0: ", psi0, psi0, "\n")
-    if (debug) cat("lmd0: ", lmd0, lmd0, "\n")
-
-    if (debug) cat("bta0[", length(bta0),"]: ", bta0, "\n")
-    if (debug) cat("gma0[", length(gma0),"]: ", gma0, "\n")
-    if (debug) cat("psi0[", length(psi0),"]: ", psi0, "\n")
-    if (debug) cat("lmd0[", length(lmd0),"]: ", lmd0, "\n")
     start <- c(bta0, gma0, psi0, lmd0)
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
   }
+  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, c(t(Y)), control$trace, control$profile)
 
-  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, c(t(Y)), control$trace)
-  if(debug) mcbd_test(m, Y, X, U, V, W, cov.method, est$par)
-  
   est
 }
 

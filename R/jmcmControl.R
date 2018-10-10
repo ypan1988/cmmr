@@ -7,9 +7,9 @@ namedList <- function(...) {
 }
 
 #' @title Control of MCBD-based Covariance Matrices Model Fitting
-jmcmControl <- function(trace = FALSE)
+jmcmControl <- function(trace = FALSE, profile = TRUE)
 {
-  structure(namedList(trace), class = 'jmcmControl')
+  structure(namedList(trace, profile), class = 'jmcmControl')
 }
 
 #' #' @title Control of Kronecker Product based Covariance Structure Model Fitting
