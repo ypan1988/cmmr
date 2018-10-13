@@ -5,7 +5,7 @@ using std::cout;
 
 #include <RcppArmadillo.h>
 
-//#include "bfgs.h"
+#include "bfgs.h"
 #include "linesearch.h"
 #include "mcbd.h"
 #include "roptim.h"
@@ -15,7 +15,8 @@ using std::cout;
 Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U,
                            arma::mat V, arma::mat W, std::string cov_method,
                            arma::vec start, arma::vec mean, bool trace = false,
-                           bool profile = true, bool covonly = false) {
+                           bool profile = true, bool covonly = false,
+                           std::string optim_method = "default") {
   int debug = 0;
 
   arma::uword n_subs = m.n_elem;
@@ -45,10 +46,10 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U,
     mcbd_obj.set_mean(mean);
   }
 
-  // pan::BFGS<cmmr::mcbd> bfgs;
-  // bfgs.set_trace(trace);
-  roptim::Roptim<cmmr::mcbd> bfgs("BFGS");
-  bfgs.control.trace = trace;
+  pan::BFGS<cmmr::mcbd> bfgs;
+  bfgs.set_trace(trace);
+  roptim::Roptim<cmmr::mcbd> optim("BFGS");
+  optim.control.trace = trace;
 
   pan::LineSearch<cmmr::mcbd> linesearch;
 
@@ -159,7 +160,10 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U,
       }
 
       mcbd_obj.set_free_param(2);
-      bfgs.minimize(mcbd_obj, tht2);
+      if (optim_method == "default")
+        bfgs.Optimize(mcbd_obj, tht2);
+      else
+        optim.minimize(mcbd_obj, tht2);
       mcbd_obj.set_free_param(0);
 
       if (trace) {
@@ -175,8 +179,14 @@ Rcpp::List mcbd_estimation(arma::uvec m, arma::mat Y, arma::mat X, arma::mat U,
       p = xnew - x;
     }
   } else {
-    bfgs.minimize(mcbd_obj, x);
-    f_min = bfgs.value();
+    if (optim_method == "default") {
+      bfgs.Optimize(mcbd_obj, x);
+      f_min = bfgs.f_min();
+      n_iters = bfgs.n_iters();
+    } else {
+      optim.minimize(mcbd_obj, x);
+      f_min = optim.value();
+    }
   }
 
   arma::vec beta = x.rows(0, lbta - 1);

@@ -30,6 +30,7 @@ NULL
 #' @param cov.method covariance structure modelling method for matrix Dt,
 #'  choose 'mcd' (Pourahmadi, 1999), 'acd' (Chen and Dunson, 2013) or 'hpc'
 #'  (Zhang et al. 2015).
+#' @param optim.method optimization method, choose 'default' or 'BFGS' (vmmin in R).
 #' @param control a list (of correct class, resulting from jmcmControl())
 #'  containing control parameters, see the *jmcmControl documentation for
 #'  details.
@@ -40,6 +41,7 @@ NULL
 
 jmcm.mcbd <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
                       cov.method = c('mcd', 'acd', 'hpc'),
+                      optim.method = c('default','BFGS'),
                       control = jmcmControl(), start = NULL)
 {
   debug = 1
@@ -47,6 +49,9 @@ jmcm.mcbd <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
 
   if (missing(cov.method))
     stop("cov.method must be specified")
+  
+  if (missing(optim.method))
+    optim.method = "default"
 
   missCtrl <- missing(control)
   if (!missCtrl && !inherits(control, "jmcmControl"))
@@ -62,9 +67,9 @@ jmcm.mcbd <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
   args <- eval(mc, parent.frame(1L))
 
   opt <- do.call(optimizeMcbd,
-                 c(args, cov.method, list(control=control, start=start)))
+                 c(args, cov.method, optim.method, list(control=control, start=start)))
 
-  mkMcbdMod(opt=opt, args=args, quad=quad, cov.method=cov.method,mc=mcout)
+  mkMcbdMod(opt=opt, args=args, quad=quad, cov.method=cov.method, optim.method=optim.method, mc=mcout)
 }
 
 #' @title Modular Functions for Covariance Matrices Model Fits
@@ -81,6 +86,7 @@ NULL
 #' @export
 mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
                        cov.method = c('mcd', 'acd', 'hpc'),
+                       optim.method = c("default", "BFGS"),
                        control = jmcmControl(), start=NULL)
 {
   debug <- 0
@@ -161,7 +167,7 @@ mldFormula <- function(formula, data = NULL, quad = c(3, 3, 3, 3),
 
 #' @rdname modular
 #' @export
-optimizeMcbd <- function(m, Y, X, U, V, W, time, cov.method, control, start)
+optimizeMcbd <- function(m, Y, X, U, V, W, time, cov.method, optim.method, control, start)
 {
   debug <- 0
   if (debug) cat("optimizeMcbd():\n")
@@ -326,14 +332,14 @@ optimizeMcbd <- function(m, Y, X, U, V, W, time, cov.method, control, start)
     start <- c(bta0, gma0, psi0, lmd0)
     if(anyNA(start)) stop("failed to find an initial value with lm(). NA detected.")
   }
-  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, c(t(Y)), control$trace, control$profile)
+  est <- mcbd_estimation(m, Y, X, U, V, W, cov.method, start, c(t(Y)), control$trace, control$profile, FALSE, optim.method)
 
   est
 }
 
 #' @rdname modular
 #' @export
-mkMcbdMod <- function(opt, args, quad, cov.method, mc)
+mkMcbdMod <- function(opt, args, quad, cov.method, optim.method, mc)
 {
   if(missing(mc)) mc <- match.call()
   
